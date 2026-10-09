@@ -3,8 +3,9 @@
   import { itemFilter, paperOn } from './sticker'
   import { settings } from './settings.svelte'
   import { PAPER_TEX_ALPHA, paperClip, paperEdge } from './look'
+  import { brushDef, MIN_SAMPLE_DIST, paintInk, paintStroke, speedToPressure, strokeHit } from './ink'
   import type { Editor } from './editor.svelte'
-  import type { Item } from './types'
+  import type { Item, Stroke } from './types'
 
   let { editor }: { editor: Editor } = $props()
 
@@ -42,6 +43,30 @@
     dist0: 1,
     midX0: 0,
     midY0: 0,
+  }
+
+  // ---- 手写墨迹：两层独立画布（已落笔的 + 正在画的那一笔） ----
+  /** 画布内部渲染倍率，缩放后依然锐利 */
+  const INK_RES = Math.min(3, Math.max(2, window.devicePixelRatio || 1))
+  let inkBase = $state<HTMLCanvasElement | null>(null)
+  let inkLive = $state<HTMLCanvasElement | null>(null)
+  let drawing = false
+  let drawId = -1
+  let erasing = false
+  let eraseId = -1
+  let eraseMarked = false
+  let stroke: Stroke | null = null
+  let strokeByPressure = false
+  let lastX = 0
+  let lastY = 0
+  let lastT = 0
+  let lastP = 0.6
+  let rafId = 0
+  let inkSeq = 0
+
+  function inkId(): string {
+    inkSeq += 1
+    return 'k' + Date.now().toString(36) + inkSeq.toString(36)
   }
 
   function clamp(v: number, lo: number, hi: number) {
@@ -105,6 +130,26 @@
     return () => editor.setDropResolver(null)
   })
 
+  // 画布尺寸或画布元素变化时重新配好墨迹层
+  $effect(() => {
+    void editor.page.width
+    void editor.page.height
+    void inkBase
+    void inkLive
+    setupInk()
+  })
+
+  // 墨迹数据变动（落笔 / 擦除 / 撤销重做）时只重画已落笔的那一层
+  $effect(() => {
+    void editor.page.strokes.length
+    drawBase()
+  })
+
+  // 退出书写模式时收尾还没结束的笔迹
+  $effect(() => {
+    if (!editor.writeMode && drawing) endStroke(true)
+  })
+
   // ---- 动效：全在单个素材元素上做，不动画布容器 ----
   /** 刚刚落下的素材：播一次弹入 */
   let popId = $state<string | null>(null)
@@ -162,12 +207,170 @@
     return Math.hypot(a.x - b.x, a.y - b.y)
   }
 
+  function inkCtx(canvas: HTMLCanvasElement | null): CanvasRenderingContext2D | null {
+    return canvas ? canvas.getContext('2d') : null
+  }
+
+  function setupInk(): void {
+    const w = editor.page.width
+    const h = editor.page.height
+    for (const c of [inkBase, inkLive]) {
+      if (!c) continue
+      c.width = Math.max(1, Math.round(w * INK_RES))
+      c.height = Math.max(1, Math.round(h * INK_RES))
+      c.style.width = w + 'px'
+      c.style.height = h + 'px'
+    }
+    drawBase()
+    drawLive()
+  }
+
+  /** 已落笔的全部墨迹：只在增删、撤销重做时整层重画 */
+  function drawBase(): void {
+    const ctx = inkCtx(inkBase)
+    if (!ctx || !inkBase) return
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.clearRect(0, 0, inkBase.width, inkBase.height)
+    ctx.setTransform(INK_RES, 0, 0, INK_RES, 0, 0)
+    paintInk(ctx, editor.page.strokes)
+  }
+
+  /** 正在画的那一笔：单独一层，每一帧只重画它自己，抬笔前就能看见 */
+  function drawLive(): void {
+    const ctx = inkCtx(inkLive)
+    if (!ctx || !inkLive) return
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.clearRect(0, 0, inkLive.width, inkLive.height)
+    if (!stroke) return
+    ctx.setTransform(INK_RES, 0, 0, INK_RES, 0, 0)
+    paintStroke(ctx, stroke)
+  }
+
+  function scheduleLive(): void {
+    if (rafId) return
+    rafId = requestAnimationFrame(() => {
+      rafId = 0
+      drawLive()
+    })
+  }
+
+  /** 这一笔能不能落：Apple Pencil 永远可以；手指默认不行，防止手掌误触 */
+  function canDraw(e: PointerEvent): boolean {
+    if (!editor.writeMode) return false
+    if (e.pointerType === 'pen' || e.pointerType === 'mouse') return true
+    return e.pointerType === 'touch' && settings.fingerDraw
+  }
+
+  /** Apple Pencil 直接取压力；拿不到压力时给一个轻触的默认值 */
+  function pressureOf(e: PointerEvent): number {
+    const p = typeof e.pressure === 'number' ? e.pressure : 0
+    return p > 0 ? clamp(p, 0, 1) : 0.35
+  }
+
+  function beginStroke(e: PointerEvent): void {
+    const p = toPage(e.clientX, e.clientY)
+    const tool = settings.tool
+    const def = brushDef(tool === 'eraser' ? 'pen' : tool)
+    strokeByPressure = e.pointerType === 'pen'
+    drawing = true
+    drawId = e.pointerId
+    lastX = p.x
+    lastY = p.y
+    lastT = e.timeStamp
+    lastP = strokeByPressure ? pressureOf(e) : 0.6
+    stroke = {
+      id: inkId(),
+      brush: def.id,
+      color: settings.inkColor,
+      width: Math.max(0.8, def.width * settings.inkSize),
+      points: [{ x: p.x, y: p.y, p: lastP }],
+    }
+    const el = stageEl
+    if (el) {
+      try {
+        el.setPointerCapture(e.pointerId)
+      } catch {
+        /* 个别环境不支持，忽略 */
+      }
+    }
+    drawLive()
+  }
+
+  function appendPoint(e: PointerEvent): void {
+    const s = stroke
+    if (!s) return
+    const p = toPage(e.clientX, e.clientY)
+    const moved = Math.hypot(p.x - lastX, p.y - lastY)
+    if (moved < MIN_SAMPLE_DIST) return
+    const dt = Math.max(1, e.timeStamp - lastT)
+    let value: number
+    if (strokeByPressure) {
+      value = pressureOf(e)
+      const tilt = Math.max(Math.abs(e.tiltX), Math.abs(e.tiltY))
+      if (tilt > 0) value = clamp(value * (1 + (tilt / 90) * 0.35), 0, 1)
+    } else {
+      value = speedToPressure(moved / dt, lastP)
+    }
+    lastP = value
+    lastX = p.x
+    lastY = p.y
+    lastT = e.timeStamp
+    s.points.push({ x: p.x, y: p.y, p: value })
+    scheduleLive()
+  }
+
+  /** 一笔结束：真正写进文档（自动保存 + 一条撤销记录） */
+  function endStroke(keep: boolean): void {
+    const s = stroke
+    drawing = false
+    drawId = -1
+    stroke = null
+    if (rafId) {
+      cancelAnimationFrame(rafId)
+      rafId = 0
+    }
+    drawLive()
+    if (keep && s && s.points.length > 1) editor.addInk(s)
+  }
+
+  /** 整笔擦除：点中哪一笔就删掉整条，不做像素级擦除 */
+  function eraseAt(e: PointerEvent): void {
+    const p = toPage(e.clientX, e.clientY)
+    const tol = Math.max(6, 10 / zoom)
+    const list = editor.page.strokes
+    const targets: string[] = []
+    for (let i = list.length - 1; i >= 0; i -= 1) {
+      if (strokeHit(list[i], p.x, p.y, tol)) targets.push(list[i].id)
+    }
+    if (targets.length === 0) return
+    editor.removeInk(targets, !eraseMarked)
+    eraseMarked = true
+  }
+
+  function beginErase(e: PointerEvent): void {
+    erasing = true
+    eraseId = e.pointerId
+    eraseMarked = false
+    const el = stageEl
+    if (el) {
+      try {
+        el.setPointerCapture(e.pointerId)
+      } catch {
+        /* 个别环境不支持，忽略 */
+      }
+    }
+    eraseAt(e)
+  }
+
   function onDown(e: PointerEvent) {
     if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return
     e.preventDefault()
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
     if (pts.size === 2) {
+      // 第二根手指落下：当前笔迹立即收尾，转入双指缩放平移
+      if (drawing) endStroke(true)
+      if (erasing) erasing = false
       const m = mid()
       d.zoom0 = zoom
       d.panX0 = panX
@@ -179,6 +382,22 @@
       return
     }
     if (pts.size > 2) return
+
+    if (editor.writeMode) {
+      if (canDraw(e)) {
+        if (settings.tool === 'eraser') beginErase(e)
+        else beginStroke(e)
+        return
+      }
+      // 书写模式下非绘制指针（手指且未开「手指可画」）只平移，不选中也不误拖贴纸
+      editor.selected = null
+      mode = 'pan'
+      d.px = e.clientX
+      d.py = e.clientY
+      d.panX0 = panX
+      d.panY0 = panY
+      return
+    }
 
     const p = toPage(e.clientX, e.clientY)
     const it = hit(p)
@@ -239,6 +458,22 @@
     if (!pts.has(e.pointerId)) return
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
+    if (drawing && e.pointerId === drawId) {
+      // getCoalescedEvents 在 Safari 上不存在，必须先判断存在性再调用
+      const coalesced = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : []
+      if (coalesced.length > 0) {
+        for (const ev of coalesced) appendPoint(ev)
+      } else {
+        appendPoint(e)
+      }
+      return
+    }
+
+    if (erasing && e.pointerId === eraseId) {
+      eraseAt(e)
+      return
+    }
+
     if (mode === 'pinch' && pts.size >= 2) {
       const f = dist() / d.dist0
       const z = clamp(d.zoom0 * f, MIN_Z, MAX_Z)
@@ -275,6 +510,11 @@
 
   function onUp(e: PointerEvent) {
     if (!pts.has(e.pointerId)) return
+    if (drawing && e.pointerId === drawId) endStroke(true)
+    if (erasing && e.pointerId === eraseId) {
+      erasing = false
+      eraseId = -1
+    }
     pts.delete(e.pointerId)
     if (pts.size === 0) {
       if (mode !== 'idle') editor.save()
@@ -355,6 +595,13 @@
 
     <div class="grain"></div>
 
+    <canvas class="ink" class:on-top={editor.page.inkTop === true} bind:this={inkBase}></canvas>
+    <canvas
+      class="ink live"
+      class:on-top={editor.page.inkTop === true}
+      bind:this={inkLive}
+    ></canvas>
+
     {#each editor.page.items as item (item.id)}
       <div
         class="item"
@@ -387,7 +634,7 @@
       <div
         class="sel-box"
         style="left:{sel.x}px; top:{sel.y}px; width:{sel.w}px; height:{sel.h}px; transform: translate(-50%, -50%) rotate({sel
-          .rot}deg); z-index:{sel.z + 1}; border-width:{Math.max(1, 1.5 / zoom)}px;"
+          .rot}deg); z-index:90000; border-width:{Math.max(1, 1.5 / zoom)}px;"
       >
         <button
           class="handle rotate"
@@ -438,6 +685,19 @@
   /* 拖拽悬停时给纸面描边高亮 */
   .stage.dropping {
     box-shadow: var(--shadow-md), 0 0 0 3px var(--terra);
+  }
+
+  /* 墨迹层：纸面之上、贴纸之下；打开「墨迹置顶」后压到所有贴纸之上 */
+  .ink {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .ink.on-top {
+    z-index: 50000;
   }
 
   .bg {

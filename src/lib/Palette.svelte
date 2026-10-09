@@ -10,6 +10,7 @@
     type UserAsset,
   } from './user-assets.svelte'
   import CropDialog from './CropDialog.svelte'
+  import { assetThumb } from './thumbs'
   import type { Editor } from './editor.svelte'
 
   let { editor }: { editor: Editor } = $props()
@@ -72,6 +73,16 @@
     setTimeout(() => {
       if (tip === text) tip = ''
     }, 1800)
+  }
+
+  /** 缩略图缺失时退回原图（例如还没跑 npm run thumbs） */
+  function onThumbFallback(e: Event) {
+    const img = e.currentTarget as HTMLImageElement
+    if (img.dataset.fallback) return
+    const full = img.dataset.full
+    if (!full) return
+    img.dataset.fallback = '1'
+    img.setAttribute('src', full)
   }
 
   function add(id: string, name: string) {
@@ -274,7 +285,13 @@
       onpointerdown={(e) => beginBuiltin(e, a)}
       onclick={() => onClickCell(() => add(a.id, a.name))}
     >
-      <img src={assetUrl(a)} alt={a.name} draggable="false" />
+      <img
+        src={assetThumb(a)}
+        data-full={assetUrl(a)}
+        alt={a.name}
+        draggable="false"
+        onerror={onThumbFallback}
+      />
       <span>{a.name}</span>
     </button>
   {/snippet}

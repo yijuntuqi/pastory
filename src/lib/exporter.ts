@@ -2,6 +2,7 @@ import { itemSrc } from './user-assets.svelte'
 import { settings } from './settings.svelte'
 import { PAPER_TEX_ALPHA, paperEdge, paperOutline } from './look'
 import { paperOn } from './sticker'
+import { inkLayerCanvas } from './ink'
 import type { Item, PageDoc } from './types'
 
 const MAX_AREA = 16777216
@@ -160,6 +161,11 @@ export async function exportPNG(page: PageDoc, want = 2): Promise<Blob> {
   paintBg(ctx, page, tex)
   ctx.restore()
 
+  // 墨迹层：先单独渲染到一张透明画布再整层贴上，这样屏幕和导出的混合结果一致
+  const inkLayer =
+    page.strokes.length > 0 ? inkLayerCanvas(page.strokes, page.width, page.height, scale) : null
+  if (inkLayer && !page.inkTop) ctx.drawImage(inkLayer, 0, 0)
+
   const used = Array.from(new Set(page.items.map((i) => i.asset)))
   const loaded = await Promise.all(
     used.map(async (id) => {
@@ -180,6 +186,8 @@ export async function exportPNG(page: PageDoc, want = 2): Promise<Blob> {
     if (!img) continue
     drawItem(ctx, item, img, scale)
   }
+
+  if (inkLayer && page.inkTop) ctx.drawImage(inkLayer, 0, 0)
 
   return await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {

@@ -2,7 +2,7 @@ import { ASSET_MAP } from './assets'
 import { newPage, uid } from './templates'
 import type { LoopId } from './look'
 import { stickerOn } from './sticker'
-import type { BgType, Item, PageDoc } from './types'
+import type { BgType, Item, PageDoc, Stroke } from './types'
 
 const KEY = 'pastory.doc.v1'
 
@@ -55,6 +55,7 @@ function load(): PageDoc | null {
     if (!raw) return null
     const doc = JSON.parse(raw) as PageDoc
     if (!doc || !Array.isArray(doc.items)) return null
+    if (!Array.isArray(doc.strokes)) doc.strokes = []
     return doc
   } catch {
     return null
@@ -68,6 +69,14 @@ export class Editor {
   lastAdded = $state<string | null>(null)
   past = $state<PageDoc[]>([])
   future = $state<PageDoc[]>([])
+
+  /** 书写模式：画布只收手写笔迹，不选中也不误拖贴纸 */
+  writeMode = $state(false)
+
+  toggleWrite() {
+    this.writeMode = !this.writeMode
+    if (this.writeMode) this.selected = null
+  }
 
   /** 素材栏拖拽的实时预览状态，画布据此显示落点提示 */
   drag = $state<DragPreview | null>(null)
@@ -310,6 +319,29 @@ export class Editor {
     this.mark()
     this.page.items = []
     this.selected = null
+    this.save()
+  }
+
+  /** 落下一整条手写笔迹：一笔就是一条撤销记录 */
+  addInk(stroke: Stroke) {
+    if (stroke.points.length === 0) return
+    this.mark()
+    this.page.strokes.push(stroke)
+    this.save()
+  }
+
+  /** 整笔擦除：点中哪几笔就删哪几笔，一次擦除动作只记一条撤销 */
+  removeInk(ids: string[], record: boolean) {
+    if (ids.length === 0) return
+    if (record) this.mark()
+    const gone = new Set(ids)
+    this.page.strokes = this.page.strokes.filter((s) => !gone.has(s.id))
+    this.save()
+  }
+
+  /** 墨迹置顶开关（存进文档，导出时同样生效） */
+  toggleInkTop() {
+    this.page.inkTop = !this.page.inkTop
     this.save()
   }
 

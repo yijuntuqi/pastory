@@ -4,7 +4,9 @@
   import { stickerOn } from './sticker'
   import { downloadBlob, exportPNG } from './exporter'
   import { settings } from './settings.svelte'
+  import { BRUSHES, INK_COLORS } from './ink'
   import { PACK_TEXTURES } from './pack-assets'
+  import { thumbUrl } from './thumbs'
   import { LOOP_NAMES, type LoopId } from './look'
 
   let { editor, onFit }: { editor: Editor; onFit?: () => void } = $props()
@@ -68,6 +70,11 @@
       class:on={settings.tilt}
       title="整页 3D 透视倾斜（默认关闭）"
       onclick={() => settings.toggleTilt()}>3D</button>
+    <button
+      class="btn ghost"
+      class:on={editor.writeMode}
+      title="手写：用 Apple Pencil 在纸面上写字涂鸦，手指仍可平移缩放"
+      onclick={() => editor.toggleWrite()}>手写</button>
   </div>
 
   <div class="right">
@@ -106,6 +113,51 @@
     </div>
   {/if}
 
+  {#if editor.writeMode}
+    <div class="inkbar">
+      {#each BRUSHES as b (b.id)}
+        <button class="btn ghost" class:on={settings.tool === b.id} onclick={() => settings.setTool(b.id)}>
+          {b.name}
+        </button>
+      {/each}
+      <button
+        class="btn ghost"
+        class:on={settings.tool === 'eraser'}
+        title="整笔橡皮：点中哪一笔就擦掉哪一笔"
+        onclick={() => settings.setTool('eraser')}>橡皮</button>
+      <span class="bar-sep"></span>
+      <input
+        class="size"
+        type="range"
+        min="0.4"
+        max="2.5"
+        step="0.1"
+        value={settings.inkSize}
+        aria-label="笔刷粗细"
+        oninput={(e) => settings.setInkSize(Number((e.currentTarget as HTMLInputElement).value))}
+      />
+      <span class="bar-sep"></span>
+      {#each INK_COLORS as c (c)}
+        <button
+          class="ink-dot"
+          class:on={settings.inkColor === c}
+          style="background:{c}"
+          title={c}
+          aria-label={'墨色 ' + c}
+          onclick={() => settings.setInkColor(c)}></button>
+      {/each}
+      <span class="bar-sep"></span>
+      <button class="btn ghost" class:on={editor.page.inkTop === true} onclick={() => editor.toggleInkTop()}>
+        墨迹置顶
+      </button>
+      <button
+        class="btn ghost"
+        class:on={settings.fingerDraw}
+        title="默认只有笔能画，防止手掌误触；打开后手指也能画"
+        onclick={() => settings.toggleFinger()}>手指可画</button>
+    </div>
+  {/if}
+
   {#if panel === 'tpl'}
     <div class="pop">
       {#each TEMPLATES as t (t.id)}
@@ -141,7 +193,7 @@
           class="swatch"
           class:on={editor.page.bg.tex === t.src}
           title={t.name}
-          style="background-image:url('{t.src}')"
+          style="background-image:url('{thumbUrl(t.src) ?? t.src}')"
           onclick={() => { editor.setBgTex(t.src); panel = '' }}>
           <span class="sw-name">{t.name}</span>
         </button>
@@ -174,6 +226,43 @@
     display: flex;
     align-items: center;
     gap: 6px;
+  }
+
+  /* 手写工具条：跟在标题栏下面自成一行 */
+  .inkbar {
+    flex-basis: 100%;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 6px 0 2px;
+    border-top: 1px dashed var(--line);
+  }
+
+  .bar-sep {
+    width: 1px;
+    align-self: stretch;
+    min-height: 18px;
+    margin: 0 4px;
+    background: var(--line);
+  }
+
+  .size {
+    width: 92px;
+    accent-color: var(--terra);
+  }
+
+  .ink-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.18);
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .ink-dot.on {
+    box-shadow: 0 0 0 2px var(--terra);
   }
 
   .brand {

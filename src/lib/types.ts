@@ -1,5 +1,28 @@
 import type { LoopId } from './look'
 
+export type BrushId = 'pen' | 'pencil' | 'marker' | 'highlighter'
+
+/** 手写笔迹上的一个采样点 */
+export interface InkPoint {
+  x: number
+  y: number
+  /**
+   * 宽度驱动值 0..1：有压感的笔（Apple Pencil）直接存压力；
+   * 鼠标 / 普通手指没有压力，按速度估算后存进来（快细慢粗）。
+   */
+  p: number
+}
+
+/** 一条手写笔迹：矢量数据，可参与撤销，导出任意倍率都清晰 */
+export interface Stroke {
+  id: string
+  brush: BrushId
+  color: string
+  /** 基础线宽（页面像素），未乘压力系数 */
+  width: number
+  points: InkPoint[]
+}
+
 export interface Item {
   id: string
   /** 素材 id，对应 assets.ts 里的 ASSETS */
@@ -37,6 +60,10 @@ export interface PageDoc {
     tex?: string
   }
   items: Item[]
+  /** 手写墨迹层：纸面之上、贴纸之下（除非打开「墨迹置顶」） */
+  strokes: Stroke[]
+  /** 墨迹是否压在所有贴纸之上 */
+  inkTop?: boolean
 }
 
 export interface TemplateDef {

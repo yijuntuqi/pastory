@@ -1,10 +1,18 @@
+import type { InkTool } from './ink'
+
 const KEY = 'pastory.settings.v1'
 
 interface Stored {
   depth?: boolean
   motion?: boolean
   tilt?: boolean
+  tool?: InkTool
+  inkColor?: string
+  inkSize?: number
+  fingerDraw?: boolean
 }
+
+const TOOLS: InkTool[] = ['pen', 'pencil', 'marker', 'highlighter', 'eraser']
 
 function read(): Stored {
   try {
@@ -15,22 +23,35 @@ function read(): Stored {
 }
 
 /**
- * 全局开关：立体效果、动效、整页 3D 透视。
- * 全部跟着自动保存，下次打开保持上次的选择。
+ * 全局开关：立体效果、动效、整页 3D 透视，以及手写笔刷偏好。
+ * 全部自动保存，下次打开保持上次的选择。
  */
 class Settings {
-  /** 立体效果总开关：白边、纸张厚度、投影；关掉导出更干净、也更省电 */
+  /** 立体效果总开关：刀模白边、纸纹和轻投影；关掉回到纯平贴纸，也省一点渲染 */
   depth = $state(true)
-  /** 动效总开关：拖入弹入、循环动效、删除淡出；关掉后立即静止 */
+  /** 动效总开关：弹入弹出、循环动效；删掉大素材卡顿时可以关掉 */
   motion = $state(true)
-  /** 整页 3D 透视倾斜，默认关闭（开着会影响导出时的观感） */
+  /** 整页 3D 透视倾斜，默认关闭，避免影响导出时的观感 */
   tilt = $state(false)
+
+  /** 当前手写工具：钢笔 / 铅笔 / 马克笔 / 荧光笔 / 橡皮 */
+  tool = $state<InkTool>('pen')
+  /** 当前墨色 */
+  inkColor = $state('#2b2b2b')
+  /** 笔刷大小倍率 */
+  inkSize = $state(1)
+  /** 手指也能画；默认关闭，防止手掌压在屏幕上误触 */
+  fingerDraw = $state(false)
 
   constructor() {
     const s = read()
     if (typeof s.depth === 'boolean') this.depth = s.depth
     if (typeof s.motion === 'boolean') this.motion = s.motion
     if (typeof s.tilt === 'boolean') this.tilt = s.tilt
+    if (s.tool && TOOLS.includes(s.tool)) this.tool = s.tool
+    if (typeof s.inkColor === 'string') this.inkColor = s.inkColor
+    if (typeof s.inkSize === 'number' && s.inkSize > 0) this.inkSize = s.inkSize
+    if (typeof s.fingerDraw === 'boolean') this.fingerDraw = s.fingerDraw
   }
 
   toggleDepth() {
@@ -48,14 +69,42 @@ class Settings {
     this.persist()
   }
 
+  setTool(t: InkTool) {
+    this.tool = t
+    this.persist()
+  }
+
+  setInkColor(c: string) {
+    this.inkColor = c
+    this.persist()
+  }
+
+  setInkSize(n: number) {
+    this.inkSize = Math.max(0.4, Math.min(2.5, n))
+    this.persist()
+  }
+
+  toggleFinger() {
+    this.fingerDraw = !this.fingerDraw
+    this.persist()
+  }
+
   private persist() {
     try {
       localStorage.setItem(
         KEY,
-        JSON.stringify({ depth: this.depth, motion: this.motion, tilt: this.tilt }),
+        JSON.stringify({
+          depth: this.depth,
+          motion: this.motion,
+          tilt: this.tilt,
+          tool: this.tool,
+          inkColor: this.inkColor,
+          inkSize: this.inkSize,
+          fingerDraw: this.fingerDraw,
+        }),
       )
     } catch {
-      /* 存不上就算了 */
+      /* 存不下就算了 */
     }
   }
 }

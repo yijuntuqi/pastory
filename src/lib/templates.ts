@@ -91,5 +91,6 @@ export function newPage(templateId = 'blank', name = '未命名'): PageDoc {
     height: PAGE_H,
     bg: { type: 'plain', color: '#FBF7F0' },
     items: buildTemplate(templateId),
+    strokes: [],
   }
 }
