@@ -120,6 +120,24 @@ export class Editor {
     this.save()
   }
 
+  addUser(assetId: string, w: number, h: number) {
+    this.mark()
+    const width = 220
+    const item: Item = {
+      id: uid(),
+      asset: assetId,
+      x: this.page.width / 2 + (Math.random() * 80 - 40),
+      y: this.page.height / 2 + (Math.random() * 80 - 40),
+      w: width,
+      h: width * (h / w),
+      rot: 0,
+      z: this.topZ() + 1,
+    }
+    this.page.items.push(item)
+    this.selected = item.id
+    this.save()
+  }
+
   update(id: string, patch: Partial<Item>, record = false) {
     const item = this.page.items.find((i) => i.id === id)
     if (!item) return

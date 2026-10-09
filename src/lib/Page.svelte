@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ASSET_MAP, assetUrl } from './assets'
+  import { itemSrc } from './user-assets.svelte'
   import type { Editor } from './editor.svelte'
   import type { Item } from './types'
 
@@ -265,10 +265,12 @@
       <div class="bg bg-lined"></div>
     {/if}
 
+    <div class="grain"></div>
+
     {#each editor.page.items as item (item.id)}
       <img
         class="item"
-        src={assetUrl(ASSET_MAP[item.asset])}
+        src={itemSrc(item.asset)}
         alt=""
         draggable="false"
         style="left:{item.x}px; top:{item.y}px; width:{item.w}px; height:{item.h}px; opacity:{item
@@ -374,5 +376,13 @@
 
   .handle.rotate {
     border-color: var(--sage);
+  }
+  .grain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: radial-gradient(rgba(60, 48, 32, 0.05) 1px, transparent 1px);
+    background-size: 3px 3px;
   }
 </style>
