@@ -1,5 +1,6 @@
 <script lang="ts">
   import { itemSrc } from './user-assets.svelte'
+  import { stickerFilter } from './sticker'
   import type { Editor } from './editor.svelte'
   import type { Item } from './types'
 
@@ -85,6 +86,21 @@
     const ro = new ResizeObserver(() => fit())
     ro.observe(el)
     return () => ro.disconnect()
+  })
+
+  // 把屏幕坐标换算成画布坐标（复用本组件的 zoom / pan，不另建一套状态），
+  // 注册给 editor，供素材栏拖拽时判断落点。
+  $effect(() => {
+    const el = stageEl
+    if (!el) return
+    editor.setDropResolver((cx, cy) => {
+      const r = el.getBoundingClientRect()
+      const x = (cx - r.left) / zoom
+      const y = (cy - r.top) / zoom
+      if (x < 0 || y < 0 || x > editor.page.width || y > editor.page.height) return null
+      return { x, y }
+    })
+    return () => editor.setDropResolver(null)
   })
 
   function mid() {
@@ -252,6 +268,7 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
     class="stage"
+    class:dropping={!!editor.drag?.over}
     bind:this={stageEl}
     onpointerdown={onDown}
     style="width:{editor.page.width}px; height:{editor.page.height}px; background:{editor.page
@@ -273,13 +290,21 @@
         src={itemSrc(item.asset)}
         alt=""
         draggable="false"
-        style="left:{item.x}px; top:{item.y}px; width:{item.w}px; height:{item.h}px; opacity:{item
+        style="filter:{stickerFilter(item)}; left:{item.x}px; top:{item.y}px; width:{item.w}px; height:{item
+          .h}px; opacity:{item
           .opacity ?? 1}; z-index:{item.z}; transform: translate(-50%, -50%) rotate({item.rot}deg) scaleX({item
           .flip
           ? -1
           : 1});"
       />
     {/each}
+
+    {#if editor.drag?.over}
+      <div
+        class="drop-hint"
+        style="left:{editor.drag.pageX}px; top:{editor.drag.pageY}px;"
+      ></div>
+    {/if}
 
     {#if sel}
       <div
@@ -327,6 +352,11 @@
     will-change: transform;
   }
 
+  /* 拖拽悬停时给纸面描边高亮 */
+  .stage.dropping {
+    box-shadow: var(--shadow-md), 0 0 0 3px var(--terra);
+  }
+
   .bg {
     position: absolute;
     inset: 0;
@@ -356,6 +386,42 @@
     pointer-events: none;
     user-select: none;
     -webkit-user-drag: none;
+  }
+
+  /* 落点提示：拖拽经过画布时显示十字定位点 */
+  .drop-hint {
+    position: absolute;
+    width: 34px;
+    height: 34px;
+    margin: -17px 0 0 -17px;
+    pointer-events: none;
+    z-index: 99999;
+    border-radius: 50%;
+    border: 1px dashed var(--terra);
+    background: rgba(201, 123, 99, 0.14);
+  }
+
+  .drop-hint::before,
+  .drop-hint::after {
+    content: '';
+    position: absolute;
+    background: var(--terra);
+  }
+
+  .drop-hint::before {
+    left: 50%;
+    top: 5px;
+    bottom: 5px;
+    width: 1px;
+    margin-left: -0.5px;
+  }
+
+  .drop-hint::after {
+    top: 50%;
+    left: 5px;
+    right: 5px;
+    height: 1px;
+    margin-top: -0.5px;
   }
 
   .sel-box {

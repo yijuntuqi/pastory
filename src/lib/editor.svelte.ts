@@ -1,5 +1,6 @@
 import { ASSET_MAP } from './assets'
 import { newPage, uid } from './templates'
+import { stickerOn } from './sticker'
 import type { BgType, Item, PageDoc } from './types'
 
 const KEY = 'pastory.doc.v1'
@@ -20,6 +21,28 @@ export const BGS: BgDef[] = [
   { type: 'lined', name: '横线', color: '#FBF7F0' },
   { type: 'grid', name: '牛皮', color: '#EFE0C6' },
 ]
+
+export interface DragStart {
+  assetId: string
+  name: string
+  src: string
+  isUser: boolean
+  w: number
+  h: number
+  clientX: number
+  clientY: number
+}
+
+export interface DragPreview extends DragStart {
+  /** 指针当前是否落在画布内 */
+  over: boolean
+  /** 反算到画布坐标的落点（未在画布内时保留上一个值） */
+  pageX: number
+  pageY: number
+}
+
+/** 屏幕坐标 -> 画布坐标的换算器，由画布组件注册 */
+export type DropResolver = (clientX: number, clientY: number) => { x: number; y: number } | null
 
 function clone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v)) as T
@@ -42,6 +65,47 @@ export class Editor {
   selected = $state<string | null>(null)
   past = $state<PageDoc[]>([])
   future = $state<PageDoc[]>([])
+
+  /** 素材栏拖拽的实时预览状态，画布据此显示落点提示 */
+  drag = $state<DragPreview | null>(null)
+  /** 画布注册的坐标换算器；缩放/平移状态由画布持有，这里只做换算 */
+  dropResolver: DropResolver | null = null
+
+  setDropResolver(fn: DropResolver | null) {
+    this.dropResolver = fn
+  }
+
+  beginDrag(start: DragStart) {
+    this.drag = { ...start, over: false, pageX: 0, pageY: 0 }
+    this.updateDrag(start.clientX, start.clientY)
+  }
+
+  updateDrag(clientX: number, clientY: number) {
+    const d = this.drag
+    if (!d) return
+    d.clientX = clientX
+    d.clientY = clientY
+    const p = this.dropResolver ? this.dropResolver(clientX, clientY) : null
+    d.over = p !== null
+    if (p) {
+      d.pageX = p.x
+      d.pageY = p.y
+    }
+  }
+
+  cancelDrag() {
+    this.drag = null
+  }
+
+  /** 松手：只有指针在画布内才插入，返回是否真的落下了素材 */
+  dropDrag(): boolean {
+    const d = this.drag
+    this.drag = null
+    if (!d || !d.over) return false
+    if (d.isUser) this.addUser(d.assetId, d.w, d.h, d.pageX, d.pageY)
+    else this.add(d.assetId, d.pageX, d.pageY)
+    return true
+  }
 
   get canUndo(): boolean {
     return this.past.length > 0
@@ -120,14 +184,14 @@ export class Editor {
     this.save()
   }
 
-  addUser(assetId: string, w: number, h: number) {
+  addUser(assetId: string, w: number, h: number, x?: number, y?: number) {
     this.mark()
     const width = 220
     const item: Item = {
       id: uid(),
       asset: assetId,
-      x: this.page.width / 2 + (Math.random() * 80 - 40),
-      y: this.page.height / 2 + (Math.random() * 80 - 40),
+      x: x ?? this.page.width / 2 + (Math.random() * 80 - 40),
+      y: y ?? this.page.height / 2 + (Math.random() * 80 - 40),
       w: width,
       h: width * (h / w),
       rot: 0,
@@ -192,6 +256,14 @@ export class Editor {
     if (!item) return
     this.mark()
     item.flip = !item.flip
+    this.save()
+  }
+
+  toggleSticker() {
+    const item = this.selectedItem
+    if (!item) return
+    this.mark()
+    item.sticker = !stickerOn(item)
     this.save()
   }
 

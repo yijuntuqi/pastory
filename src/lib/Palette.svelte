@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { ASSETS, CATEGORIES, assetUrl, type CatId } from './assets'
+  import { ASSETS, CATEGORIES, assetUrl, type AssetDef, type CatId } from './assets'
   import {
     userAssets,
     importFiles,
@@ -21,6 +21,28 @@
   let busy = $state(false)
   let fileEl = $state<HTMLInputElement | null>(null)
   let cropId = $state<string | null>(null)
+
+  /** 手指 / 鼠标移动超过这个距离才算拖拽 */
+  const DRAG_THRESHOLD = 6
+
+  interface Gesture {
+    pointerId: number
+    sx: number
+    sy: number
+    assetId: string
+    name: string
+    src: string
+    isUser: boolean
+    w: number
+    h: number
+    el: HTMLElement
+    decided: boolean
+    dragging: boolean
+  }
+
+  let gesture: Gesture | null = null
+  let dragId = $state<string | null>(null)
+  let swallowClick = false
 
   const builtin = $derived(cat === 'mine' ? [] : ASSETS.filter((a) => a.cat === cat))
   const mine = $derived([...userAssets.entries()] as [string, UserAsset][])
@@ -45,6 +67,123 @@
   function addMine(id: string, a: UserAsset) {
     editor.addUser(id, a.w, a.h)
     flash('已加入：我的素材')
+  }
+
+  function commitGesture(g: Gesture) {
+    if (g.isUser) addMine(g.assetId, { src: g.src, w: g.w, h: g.h })
+    else add(g.assetId, g.name)
+  }
+
+  function beginGesture(
+    e: PointerEvent,
+    data: { assetId: string; name: string; src: string; isUser: boolean; w: number; h: number },
+  ) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    swallowClick = false
+    gesture = {
+      pointerId: e.pointerId,
+      sx: e.clientX,
+      sy: e.clientY,
+      el: e.currentTarget as HTMLElement,
+      decided: false,
+      dragging: false,
+      ...data,
+    }
+  }
+
+  function onGlobalTouchMove(e: TouchEvent) {
+    if (gesture?.dragging) e.preventDefault()
+  }
+
+  function onGlobalMove(e: PointerEvent) {
+    const g = gesture
+    if (!g || e.pointerId !== g.pointerId) return
+    const dx = e.clientX - g.sx
+    const dy = e.clientY - g.sy
+
+    if (!g.decided) {
+      if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return
+      g.decided = true
+      // 触摸端：纯横向滑动交给素材栏自己滚，纵向 / 斜向才进入拖拽
+      if (e.pointerType !== 'mouse' && Math.abs(dx) > Math.abs(dy)) {
+        gesture = null
+        return
+      }
+      g.dragging = true
+      swallowClick = true
+      dragId = g.assetId
+      try {
+        g.el.setPointerCapture(g.pointerId)
+      } catch {
+        /* 个别浏览器不支持指针捕获，退化成全局监听即可 */
+      }
+      window.addEventListener('touchmove', onGlobalTouchMove, { passive: false })
+      editor.beginDrag({
+        assetId: g.assetId,
+        name: g.name,
+        src: g.src,
+        isUser: g.isUser,
+        w: g.w,
+        h: g.h,
+        clientX: e.clientX,
+        clientY: e.clientY,
+      })
+      return
+    }
+
+    if (g.dragging) {
+      // 拖拽期间别让页面跟着滚
+      if (e.cancelable) e.preventDefault()
+      editor.updateDrag(e.clientX, e.clientY)
+    }
+  }
+
+  function endGesture(e: PointerEvent, cancelled: boolean) {
+    const g = gesture
+    if (!g || e.pointerId !== g.pointerId) return
+    gesture = null
+    window.removeEventListener('touchmove', onGlobalTouchMove)
+    dragId = null
+    if (g.dragging) {
+      if (cancelled) editor.cancelDrag()
+      else editor.dropDrag()
+      return
+    }
+    // 没移动够阈值 = 点一下，走原来的「加到纸面中间」
+    if (!g.decided && !cancelled) {
+      swallowClick = true
+      commitGesture(g)
+    }
+  }
+
+  function onClickCell(fn: () => void) {
+    if (swallowClick) {
+      swallowClick = false
+      return
+    }
+    fn()
+  }
+
+  function beginBuiltin(e: PointerEvent, a: AssetDef) {
+    beginGesture(e, {
+      assetId: a.id,
+      name: a.name,
+      src: assetUrl(a),
+      isUser: false,
+      w: a.w,
+      h: a.h,
+    })
+  }
+
+  function beginMine(e: PointerEvent, id: string, a: UserAsset) {
+    beginGesture(e, {
+      assetId: id,
+      name: '我的素材',
+      src: a.src,
+      isUser: true,
+      w: a.w,
+      h: a.h,
+    })
   }
 
   async function onPick(e: Event) {
@@ -77,6 +216,12 @@
     flash('已裁剪')
   }
 </script>
+
+<svelte:window
+  onpointermove={onGlobalMove}
+  onpointerup={(e) => endGesture(e, false)}
+  onpointercancel={(e) => endGesture(e, true)}
+/>
 
 <aside class="palette">
   <div class="tabs">
@@ -113,8 +258,13 @@
         </p>
       {:else}
         {#each mine as [id, a] (id)}
-          <div class="cell mine">
-            <button class="thumb" title="加入手帐" onclick={() => addMine(id, a)}>
+          <div class="cell mine" class:dragging={dragId === id}>
+            <button
+              class="thumb"
+              title="按住拖到纸上，或点一下加到中间"
+              onpointerdown={(e) => beginMine(e, id, a)}
+              onclick={() => onClickCell(() => addMine(id, a))}
+            >
               <img src={a.src} alt="" draggable="false" />
             </button>
             <button class="cut" title="裁剪" onclick={() => (cropId = id)}>✂</button>
@@ -124,7 +274,13 @@
       {/if}
     {:else}
       {#each builtin as a (a.id)}
-        <button class="cell" title={a.name} onclick={() => add(a.id, a.name)}>
+        <button
+          class="cell"
+          class:dragging={dragId === a.id}
+          title={a.name}
+          onpointerdown={(e) => beginBuiltin(e, a)}
+          onclick={() => onClickCell(() => add(a.id, a.name))}
+        >
           <img src={assetUrl(a)} alt={a.name} draggable="false" />
           <span>{a.name}</span>
         </button>
@@ -134,6 +290,12 @@
 
   {#if tip}
     <div class="tip">{tip}</div>
+  {/if}
+
+  {#if editor.drag}
+    <div class="ghost" style="left:{editor.drag.clientX}px; top:{editor.drag.clientY}px;">
+      <img src={editor.drag.src} alt="" draggable="false" />
+    </div>
   {/if}
 </aside>
 
@@ -245,6 +407,31 @@
     transform: scale(0.95);
   }
 
+  .cell.dragging,
+  .cell.dragging:active {
+    transform: none;
+    border-color: var(--terra);
+    background: var(--paper-2);
+    box-shadow: 0 0 0 2px rgba(201, 123, 99, 0.28);
+  }
+
+  .ghost {
+    position: fixed;
+    width: 78px;
+    height: 78px;
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0.9;
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  .ghost img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 12px rgba(58, 51, 44, 0.28));
+  }
+
   .cell img {
     width: 100%;
     height: 46px;
@@ -326,8 +513,23 @@
       max-height: 42vh;
     }
 
+    /* 移动端素材栏改成单行横向滚动：横向留给滚动，纵向 / 斜向留给拖拽 */
     .grid {
-      grid-template-columns: repeat(4, 1fr);
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      touch-action: pan-x;
+    }
+
+    .grid > .cell {
+      flex: 0 0 auto;
+      width: 78px;
+    }
+
+    .grid > .empty {
+      flex: 1 1 auto;
+      min-width: 200px;
     }
   }
 </style>

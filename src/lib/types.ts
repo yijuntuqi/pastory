@@ -13,6 +13,8 @@ export interface Item {
   /** 是否水平翻转 */
   flip?: boolean
   opacity?: number
+  /** 贴纸质感：白边刀模 + 轻投影；未设置时按素材分类取默认 */
+  sticker?: boolean
   /** 层级，越小越靠下 */
   z: number
 }

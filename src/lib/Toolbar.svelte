@@ -1,6 +1,7 @@
 <script lang="ts">
   import { BGS, type BgDef, type Editor } from './editor.svelte'
   import { TEMPLATES } from './templates'
+  import { stickerOn } from './sticker'
   import { downloadBlob, exportPNG } from './exporter'
 
   let { editor, onFit }: { editor: Editor; onFit?: () => void } = $props()
@@ -65,6 +66,11 @@
       <span class="dot"></span>
       <button class="btn ghost" onclick={() => editor.duplicate()}>复制</button>
       <button class="btn ghost" onclick={() => editor.flip()}>翻转</button>
+      <button
+        class="btn ghost"
+        class:on={stickerOn(sel)}
+        title="贴纸白边与投影"
+        onclick={() => editor.toggleSticker()}>贴纸感</button>
       <button class="btn ghost" onclick={() => editor.toFront()}>置顶</button>
       <button class="btn ghost" onclick={() => editor.toBack()}>置底</button>
       <button class="btn ghost danger" onclick={() => editor.remove()}>删除</button>

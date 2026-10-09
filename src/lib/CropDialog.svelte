@@ -121,6 +121,8 @@
 <svelte:window onkeydown={(e) => e.key === 'Escape' && oncancel()} />
 
 <div class="mask" role="presentation" onclick={oncancel}>
+  <!-- svelte-ignore a11y_interactive_supports_focus -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div class="panel" role="dialog" aria-label="裁剪图片" onclick={(e) => e.stopPropagation()}>
     <div class="head">
       <strong>裁剪</strong>
@@ -130,6 +132,7 @@
     <div class="viewport">
       <div class="frame" bind:this={frameEl} style="width:{disp.w}px;height:{disp.h}px">
         <img bind:this={imgEl} {src} alt="" draggable="false" onload={fit} />
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="crop"
           style="left:{rect.x}px;top:{rect.y}px;width:{rect.w}px;height:{rect.h}px"
@@ -139,6 +142,7 @@
           onpointercancel={up}
         >
           {#each DIRS as d (d)}
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
             <span
               class="g {d}"
               onpointerdown={(e) => down(e, d)}
