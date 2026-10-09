@@ -1,0 +1,38 @@
+export interface Item {
+  id: string
+  /** 素材 id，对应 assets.ts 里的 ASSETS */
+  asset: string
+  /** 中心点坐标，单位是页面像素 */
+  x: number
+  y: number
+  /** 尺寸，单位是页面像素 */
+  w: number
+  h: number
+  /** 旋转角度，单位度 */
+  rot: number
+  /** 是否水平翻转 */
+  flip?: boolean
+  opacity?: number
+  /** 层级，越小越靠下 */
+  z: number
+}
+
+export type BgType = 'plain' | 'dots' | 'grid' | 'lined'
+
+export interface PageDoc {
+  id: string
+  name: string
+  width: number
+  height: number
+  bg: {
+    type: BgType
+    color: string
+  }
+  items: Item[]
+}
+
+export interface TemplateDef {
+  id: string
+  name: string
+  hint: string
+}

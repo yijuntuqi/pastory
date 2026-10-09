@@ -1,47 +1,61 @@
-# Svelte + TS + Vite
+# Pastory
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+用贴纸和印章拼出一页好看的手帐。Web / PWA，手机、平板、桌面浏览器都能开。
 
-## Recommended IDE Setup
+## 本地跑起来
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
-
-## Need an official Svelte framework?
-
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
-
-## Technical considerations
-
-**Why use this over SvelteKit?**
-
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
-
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
-
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
-
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
-
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
-
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `allowJs` in the TS template?**
-
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
 ```
+npm install
+npm run dev
+```
+
+命令会给一个 http://localhost:5173 的地址，浏览器打开就能用。
+
+## 在 iPad / 手机上打开（同一个 Wi-Fi）
+
+```
+npm run dev -- --host
+```
+
+看命令输出的 Network 地址，形如 http://192.168.x.x:5173，在平板浏览器里输进去。
+Safari 里建议再点「分享 → 添加到主屏幕」，之后就是全屏、没地址栏的样子，
+而且能绕开 Safari 自动清理七天本地数据的问题。
+
+## 打包和预览
+
+```
+npm run build
+npm run preview
+```
+
+## 目录结构
+
+```
+src/App.svelte            外壳，把三块拼起来
+src/lib/Page.svelte       画布：拖动 / 缩放 / 旋转 / 双指缩放平移
+src/lib/Palette.svelte    右侧素材面板
+src/lib/Toolbar.svelte    顶部工具条：撤销、模板、纸面、导出
+src/lib/editor.svelte.ts  状态、撤销重做、本地自动保存
+src/lib/assets.ts         26 个手绘 SVG 素材（胶带 / 便签 / 印章 / 植物 / 装饰 / 边框）
+src/lib/templates.ts      4 套模板：空白 / 日常 / 周计划 / 旅行
+src/lib/exporter.ts       导出 PNG（1x / 2x / 3x，自动避开 iOS 画布上限）
+```
+
+## 怎么用
+
+1. 右侧面板点一下素材，它就加到页面中间。
+2. 在画布上拖到想放的位置；选中后右下角圆点缩放，上方圆点旋转。
+3. 想换纸面：顶部「纸面」；想换一套排版：顶部「模板」。
+4. 顶部「导出图片」存成 PNG，可直接发小红书 / 朋友圈。
+5. 画布缩放：鼠标滚轮，或平板双指捧合；顶部「整页」一键回到全景。
+
+## 部署成网址（Netlify）
+
+在 Netlify 里 Import 这个 GitHub 仓库，填：
+
+```
+Build command:    npm run build
+Publish directory: dist
+```
+
+以后每次 push，网站自动重新发布。URL 可以在 Site settings 里改成 pastory.netlify.app。
