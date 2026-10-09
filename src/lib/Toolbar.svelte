@@ -3,6 +3,9 @@
   import { TEMPLATES } from './templates'
   import { stickerOn } from './sticker'
   import { downloadBlob, exportPNG } from './exporter'
+  import { settings } from './settings.svelte'
+  import { PACK_TEXTURES } from './pack-assets'
+  import { LOOP_NAMES, type LoopId } from './look'
 
   let { editor, onFit }: { editor: Editor; onFit?: () => void } = $props()
 
@@ -50,6 +53,21 @@
     <button class="btn" class:on={panel === 'tpl'} onclick={() => toggle('tpl')}>模板</button>
     <button class="btn" class:on={panel === 'bg'} onclick={() => toggle('bg')}>纸面</button>
     <button class="btn ghost" title="回到整页" onclick={() => onFit?.()}>整页</button>
+    <button
+      class="btn ghost"
+      class:on={settings.depth}
+      title="立体效果：纸张厚度与投影，关掉导出更干净"
+      onclick={() => settings.toggleDepth()}>立体</button>
+    <button
+      class="btn ghost"
+      class:on={settings.motion}
+      title="动效：弹入、循环、淡出"
+      onclick={() => settings.toggleMotion()}>动效</button>
+    <button
+      class="btn ghost"
+      class:on={settings.tilt}
+      title="整页 3D 透视倾斜（默认关闭）"
+      onclick={() => settings.toggleTilt()}>3D</button>
   </div>
 
   <div class="right">
@@ -71,6 +89,17 @@
         class:on={stickerOn(sel)}
         title="贴纸白边与投影"
         onclick={() => editor.toggleSticker()}>贴纸感</button>
+      <select
+        class="loopsel"
+        aria-label="循环动效"
+        disabled={!settings.motion}
+        value={sel.loop ?? ''}
+        onchange={(e) => editor.setLoop((e.currentTarget as HTMLSelectElement).value as LoopId | '')}
+      >
+        {#each LOOP_NAMES as l (l.id)}
+          <option value={l.id}>{l.id ? '动效：' + l.name : '动效：无'}</option>
+        {/each}
+      </select>
       <button class="btn ghost" onclick={() => editor.toFront()}>置顶</button>
       <button class="btn ghost" onclick={() => editor.toBack()}>置底</button>
       <button class="btn ghost danger" onclick={() => editor.remove()}>删除</button>
@@ -100,6 +129,24 @@
           <span class="sw-pat {b.type}"></span>
         </button>
       {/each}
+      <button
+        class="swatch tex-off"
+        class:on={!editor.page.bg.tex}
+        title="不用底纹"
+        onclick={() => { editor.setBgTex(null); panel = '' }}>
+        <span class="sw-name">无底纹</span>
+      </button>
+      {#each PACK_TEXTURES as t (t.id)}
+        <button
+          class="swatch"
+          class:on={editor.page.bg.tex === t.src}
+          title={t.name}
+          style="background-image:url('{t.src}')"
+          onclick={() => { editor.setBgTex(t.src); panel = '' }}>
+          <span class="sw-name">{t.name}</span>
+        </button>
+      {/each}
+      <p class="credit">纸纹与素材来自 The Met / Cleveland Museum of Art / ambientCG，授权 CC0。</p>
     </div>
   {/if}
 
@@ -223,6 +270,8 @@
     flex-direction: row;
     flex-wrap: wrap;
     max-width: 320px;
+    max-height: 62vh;
+    overflow-y: auto;
   }
 
   .opt {
@@ -262,6 +311,31 @@
     border-radius: 10px;
     border: 1px solid var(--line);
     overflow: hidden;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .swatch.on {
+    outline: 2px solid var(--terra);
+    outline-offset: -2px;
+  }
+
+  .swatch.tex-off {
+    background: var(--paper);
+  }
+
+  .credit {
+    flex: 1 0 100%;
+    margin: 2px 0 0;
+    font-size: 10px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+
+  .loopsel {
+    height: 30px;
+    margin: 0 4px 0 0;
+    font-size: 12px;
   }
 
   .sw-name {

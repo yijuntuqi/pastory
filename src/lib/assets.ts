@@ -1,4 +1,4 @@
-export type CatId = 'tape' | 'note' | 'stamp' | 'plant' | 'deco' | 'frame' | 'pro' | 'cut'
+export type CatId = 'tape' | 'note' | 'stamp' | 'plant' | 'deco' | 'frame' | 'pro' | 'cut' | 'pack'
 
 export interface AssetDef {
   id: string
@@ -6,7 +6,14 @@ export interface AssetDef {
   cat: CatId
   w: number
   h: number
-  svg: string
+  /** 内联 SVG 素材；位图素材改用 src */
+  svg?: string
+  /** 位图素材在 public 下的相对 URL（已 encodeURI） */
+  src?: string
+  /** 素材栏里的二级分组名（素材包按子目录分组） */
+  group?: string
+  /** 需要纸质外观的位图素材：白边 + 不规则剪边 */
+  paper?: boolean
 }
 
 export const CATEGORIES: { id: CatId; name: string }[] = [
@@ -18,10 +25,12 @@ export const CATEGORIES: { id: CatId; name: string }[] = [
   { id: 'plant', name: '植物' },
   { id: 'deco', name: '装饰' },
   { id: 'frame', name: '边框' },
+  { id: 'pack', name: '素材包' },
 ]
 
 import { PRO_ASSETS } from './pro-assets'
 import { PRO_ASSETS_2 } from './pro-assets-2'
+import { PACK_ASSETS } from './pack-assets'
 const NS = 'xmlns="http://www.w3.org/2000/svg"'
 
 function tape(id: string, name: string, base: string, over: string) {
@@ -309,12 +318,13 @@ const frames = [
   },
 ]
 
-export const ASSETS: AssetDef[] = [...PRO_ASSETS, ...PRO_ASSETS_2, ...tapes, ...notes, ...stamps, ...plants, ...decos, ...frames]
+export const ASSETS: AssetDef[] = [...PRO_ASSETS, ...PRO_ASSETS_2, ...tapes, ...notes, ...stamps, ...plants, ...decos, ...frames, ...PACK_ASSETS]
 
 export const ASSET_MAP: Record<string, AssetDef> = Object.fromEntries(
   ASSETS.map((a) => [a.id, a]),
 )
 
 export function assetUrl(a: AssetDef): string {
-  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(a.svg)
+  if (a.src) return a.src
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(a.svg ?? '')
 }

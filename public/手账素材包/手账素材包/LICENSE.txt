@@ -1,0 +1,873 @@
+手账素材包 · LICENSE / 来源与授权说明
+生成日期：2026-10-09
+
+【总体授权结论】
+本包内全部素材均来自明确标注为 CC0 1.0（Creative Commons Zero，公有领域奉献）的开放获取来源。
+CC0 的含义：可以复制、修改、商用，并且允许把素材打包进产品、分发给终端用户（再分发），无需署名。
+因此本素材包可以整体放进 Pastory 的静态资源目录并随产品分发。
+
+【来源清单】
+1. The Met Open Access — https://www.metmuseum.org/about-the-met/policies-and-documents/open-access （CC0）
+2. Cleveland Museum of Art Open Access — https://www.clevelandart.org/open-access （CC0）
+3. ambientCG — https://ambientcg.com （CC0）
+
+【目录结构】
+植物 / 邮票邮戳 / 票据票根 / 旧纸片 / 花边装饰 / 纸纹理
+
+【逐文件明细】
+
+========================================================================
+## 植物（16 个文件）
+
+- 文件：植物/met_264582.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ph/original/DP72081.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/264582
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Unknown
+  标题：Botanical Garden
+  年代：1860s–70s
+  尺寸：1200x885
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+
+- 文件：植物/met_264586.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ph/original/DP72084.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/264586
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Unknown
+  标题：Botanical Garden
+  年代：1860s–70s
+  尺寸：1200x884
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+
+- 文件：植物/met_264587.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ph/original/DP72085.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/264587
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Unknown
+  标题：Botanical Garden
+  年代：1860s–70s
+  尺寸：893x1200
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+
+- 文件：植物/met_264591.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ph/original/DP72089.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/264591
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Unknown
+  标题：Botanical Garden
+  年代：1860s–70s
+  尺寸：1200x886
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+
+- 文件：植物/met_283063.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ph/original/DP339367.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/283063
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：William Henry Fox Talbot
+  标题：[Botanical Specimen]
+  年代：ca. 1835
+  尺寸：785x1200
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+
+- 文件：植物/met_285149.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ph/original/DP147833.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/285149
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Unknown
+  标题：[Botanical Specimen: Fern]
+  年代：1855–60
+  尺寸：864x1200
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+
+- 文件：植物/met_287790.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ph/original/DP147416.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/287790
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Unknown
+  标题：[Botanical Gardens, Calcutta]
+  年代：1850s
+  尺寸：1200x961
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+
+- 文件：植物/met_287841.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ph/original/DP147448.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/287841
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Captain R. B. Hill
+  标题：[Botanical Gardens, Calcutta]
+  年代：1850s
+  尺寸：1200x961
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+
+- 文件：植物/met_287842.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ph/original/DP147449.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/287842
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Captain R. B. Hill
+  标题：[Botanical Gardens, Calcutta]
+  年代：1850s
+  尺寸：1200x959
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+
+- 文件：植物/met_287858.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ph/original/DP147466.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/287858
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Captain R. B. Hill
+  标题：[Botanical Gardens, Calcutta]
+  年代：1850s
+  尺寸：1200x965
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+
+- 文件：植物/met_360446.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP801159.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/360446
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Mary Delany
+  标题：Botanical Study
+  年代：ca. 1772–82
+  尺寸：1068x1200
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+
+- 文件：植物/met_362545.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP823471.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/362545
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous, French, 19th century
+  标题：Botanical Studies (recto); Botanical Studies (verso)
+  年代：ca. 1820
+  尺寸：780x1200
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+
+- 文件：植物/met_362554.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP823473.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/362554
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous, French, 19th century
+  标题：Botanical Study
+  年代：ca. 1820
+  尺寸：772x1200
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+
+- 文件：植物/met_362627.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP823474.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/362627
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous, French, 19th century
+  标题：Botanical Studies
+  年代：ca. 1820
+  尺寸：783x1200
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+
+- 文件：植物/met_707883.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/DP-17012-025.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/707883
+  授权：CC0 1.0 (Creative Commons Zero)（允许商用与再分发，无需署名）
+  作者：Chelsea Porcelain Manufactory
+  标题：Botanical plate with thistle
+  年代：ca. 1755
+  尺寸：1600x1600
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+
+- 文件：植物/met_707885.png
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/DP-1687-035.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/707885
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Chelsea Porcelain Manufactory
+  标题：Botanical plate with honeysuckle spray
+  年代：ca. 1755
+  尺寸：1200x913
+  访问日期：2026-10-09
+  处理：auto-keyed white background -> transparent PNG
+========================================================================
+## 邮票邮戳（18 个文件）
+
+- 文件：邮票邮戳/met_1062.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ad/original/25462.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/1062
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Stamp
+  年代：1800–83
+  尺寸：1360x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_1063.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ad/original/25586.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/1063
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Stamp
+  年代：1800–1883
+  尺寸：1215x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_211414.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SFES2777D.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/211414
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Souvenir spoon with a Dresden building (possibly General Post Office) and finial in form of postage stamp
+  年代：late 19th century
+  尺寸：450x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_211421.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SF2002_236_4_img1.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/211421
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：William Wyon
+  标题：Unused block of forty-two "Two Penny Blue" postage stamps of Queen Victoria
+  年代：issued March 13, 1841
+  尺寸：1600x1064
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_211423.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SF2002_236_3_img1.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/211423
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：William Wyon
+  标题：Unused block of twelve "Penny Red Brown" postage stamps of Queen Victoria
+  年代：issued February 10, 1841
+  尺寸：1600x641
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_211425.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SF2002_236_2_img1.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/211425
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：William Wyon
+  标题：Unused block of four "Two Penny Blue" postage stamps of Queen Victoria
+  年代：issued May 8, 1840
+  尺寸：1299x1538
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_211478.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SF2002_399_10_img1.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/211478
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：William Wyon
+  标题：Unused block of four "Penny Black" postage stamps of Queen Victoria
+  年代：issued May 6, 1840
+  尺寸：1600x1434
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_211479.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SF2002_399_11_img1.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/211479
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：William Wyon
+  标题：Unused block of forty-two "Penny Red-Brown" postage stamps of Queen Victoria
+  年代：issued February 10, 1841
+  尺寸：1553x1400
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_212143.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SFES2807D.JPG
+  条目页：https://www.metmuseum.org/art/collection/search/212143
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Souvenir spoon with view of a street scene and finial in form of a postage stamp
+  年代：late 19th century
+  尺寸：481x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_212144.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SFES2810D.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/212144
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Souvenir spoon with view of the Cathedral in León and finial in form of a postage stamp
+  年代：late 19th century
+  尺寸：516x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_212145.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SFES2811D.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/212145
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Souvenir spoon with street scene in Oviedo and finial in form of a postage stamp
+  年代：late 19th century
+  尺寸：489x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_212146.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SFES2814D.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/212146
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Souvenir spoon with view of Bilbao harbor and tower bridge and finial in form of a postage stamp
+  年代：late 19th century
+  尺寸：682x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_212147.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SFES2815D.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/212147
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Souvenir spoon with view of a long avenue and finial in the form of a postage stamp
+  年代：late 19th century
+  尺寸：492x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_212148.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SFES2818D.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/212148
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Souvenir spoon with view of Parque Albear and finial in form of a postage stamp
+  年代：late 19th century
+  尺寸：572x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_212149.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SFES2819D.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/212149
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Souvenir spoon with view of the Paseo del Maleron and finial in form of a postage stamp
+  年代：late 19th century
+  尺寸：550x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_212150.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SFES2822D.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/212150
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Souvenir spoon with view of a harbor and finial in form of a postage stamp
+  年代：late 19th century
+  尺寸：508x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_212157.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SFES2788D.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/212157
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Souvenir spoon with green postage stamp and postmark for Wiesbaden
+  年代：late 19th century
+  尺寸：405x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：邮票邮戳/met_730698.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP886120.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/730698
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous
+  标题：Valentine
+  年代：ca. 1870
+  尺寸：1600x1090
+  访问日期：2026-10-09
+  处理：resized
+========================================================================
+## 票据票根（13 个文件）
+
+- 文件：票据票根/met_345220.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP806879.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/345220
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Jules-Edmond-Charles Lachaise
+  标题：Trade Card
+  年代：January 1835
+  尺寸：1600x1012
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：票据票根/met_812835.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP884943.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/812835
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous, British, 18th century
+  标题：Trade card for Thomas Clout, printer
+  年代：18th century
+  尺寸：1600x1059
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：票据票根/met_812853.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP884946.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/812853
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous, British, 19th century
+  标题：Trade Card for Downey, engraver
+  年代：19th century
+  尺寸：1600x1038
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：票据票根/met_812868.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP884952.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/812868
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous, British, 19th century
+  标题：Trade Card for T. Sanders, engraver
+  年代：19th century
+  尺寸：1073x1561
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：票据票根/met_815781.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP884978.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/815781
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous, British, 19th century
+  标题：Trade Card
+  年代：19th century
+  尺寸：1600x1035
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：票据票根/met_815801.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP884980.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/815801
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous, British, 19th century
+  标题：Trade card
+  年代：19th century
+  尺寸：1600x1135
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：票据票根/met_817334.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP885049.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/817334
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous, British, 19th century
+  标题：Trade Card
+  年代：19th century
+  尺寸：1364x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：票据票根/met_819539.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP885180.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/819539
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous, British, 19th century
+  标题：Trade Card
+  年代：19th century
+  尺寸：1600x1167
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：票据票根/met_819595.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP885187.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/819595
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous, British, 19th century
+  标题：Trade Card for Danby, Engraver
+  年代：19th century
+  尺寸：1600x1083
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：票据票根/met_819607.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP885188.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/819607
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous, British, 19th century
+  标题：Trade Card for Curtis, Engraver
+  年代：19th century
+  尺寸：1134x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：票据票根/met_819619.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP885192.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/819619
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous, British, 19th century
+  标题：Trade Card for Dorme, Engraver
+  年代：19th century
+  尺寸：1162x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：票据票根/met_819626.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP885197.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/819626
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous, British, 19th century
+  标题：Trade Card for Danby, Engraver
+  年代：19th century
+  尺寸：1084x1418
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：票据票根/met_819643.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP885204.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/819643
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Anonymous, British, 19th century
+  标题：Trade Card for Brandard, Engraver
+  年代：19th century
+  尺寸：1600x1067
+  访问日期：2026-10-09
+  处理：resized
+========================================================================
+## 旧纸片（9 个文件）
+
+- 文件：旧纸片/met_208146.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/SF1993_298.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/208146
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Wallpaper
+  年代：ca. 1830
+  尺寸：1600x1131
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：旧纸片/met_9658.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ad/original/25607.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/9658
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Wallpaper Panel
+  年代：1700–1730
+  尺寸：1266x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：旧纸片/met_9663.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ad/original/25906.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/9663
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Wallpaper Panel
+  年代：1700–1730
+  尺寸：1600x1273
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：旧纸片/met_9665.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ad/original/25605.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/9665
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Wallpaper Panel
+  年代：1700–1730
+  尺寸：1292x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：旧纸片/met_9666.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ad/original/25610.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/9666
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Wallpaper Panel
+  年代：1700–1730
+  尺寸：1276x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：旧纸片/met_9668.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ad/original/25903.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/9668
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Wallpaper Panel
+  年代：1700–1730
+  尺寸：1282x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：旧纸片/met_9669.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ad/original/25900.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/9669
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Wallpaper Panel
+  年代：1700–1730
+  尺寸：1304x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：旧纸片/met_9681.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ad/original/45606.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/9681
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Arthur and Robert Wallpapers
+  标题：Wallpaper
+  年代：ca. 1790
+  尺寸：864x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：旧纸片/met_9682.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ad/original/45605.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/9682
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Arthur and Robert Wallpapers
+  标题：Wallpaper
+  年代：ca. 1790
+  尺寸：629x1600
+  访问日期：2026-10-09
+  处理：resized
+========================================================================
+## 花边装饰（7 个文件）
+
+- 文件：花边装饰/met_12960.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/ad/original/97325.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/12960
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Ornament
+  年代：1850–1900
+  尺寸：1224x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：花边装饰/met_207710.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/es/original/244498.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/207710
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Ornament
+  年代：third quarter 15th century
+  尺寸：1076x1600
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：花边装饰/met_323807.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/an/original/DP122478.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/323807
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Assyrian
+  标题：Ornament
+  年代：ca. 9th–7th century BCE
+  尺寸：1600x1091
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：花边装饰/met_326082.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/an/original/DP-40342-001.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/326082
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Ornament
+  年代：ca. late 3rd millennium BCE
+  尺寸：1600x1199
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：花边装饰/met_33288.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/aa/original/LC-20_151_15-002.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/33288
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：British
+  标题：Ornament
+  年代：14th century
+  尺寸：1600x1280
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：花边装饰/met_386687.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/dp/original/DP806852.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/386687
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Richardson Ellson & Co.
+  标题：Ornament
+  年代：ca. 1880
+  尺寸：1600x1316
+  访问日期：2026-10-09
+  处理：resized
+
+- 文件：花边装饰/met_446775.jpg
+  来源：The Met Open Access
+  原图URL：https://images.metmuseum.org/CRDImages/is/original/15.95.110_2.jpg
+  条目页：https://www.metmuseum.org/art/collection/search/446775
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  标题：Ornament
+  年代：19th century
+  尺寸：1600x1200
+  访问日期：2026-10-09
+  处理：resized
+========================================================================
+## 纸纹理（10 个文件）
+
+- 文件：纸纹理/ambientcg_Cardboard001.jpg
+  来源：ambientCG
+  原图URL：https://ambientcg.com/a/Cardboard001
+  条目页：https://ambientcg.com/a/Cardboard001
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Lennart Demes / ambientCG
+  标题：Cardboard001
+  尺寸：1024x1024
+  访问日期：2026-10-09
+  处理：Color map extracted from 1K JPG set
+
+- 文件：纸纹理/ambientcg_Cardboard002.jpg
+  来源：ambientCG
+  原图URL：https://ambientcg.com/a/Cardboard002
+  条目页：https://ambientcg.com/a/Cardboard002
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Lennart Demes / ambientCG
+  标题：Cardboard002
+  尺寸：1024x1024
+  访问日期：2026-10-09
+  处理：Color map extracted from 1K JPG set
+
+- 文件：纸纹理/ambientcg_Cardboard003.jpg
+  来源：ambientCG
+  原图URL：https://ambientcg.com/a/Cardboard003
+  条目页：https://ambientcg.com/a/Cardboard003
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Lennart Demes / ambientCG
+  标题：Cardboard003
+  尺寸：1024x1024
+  访问日期：2026-10-09
+  处理：Color map extracted from 1K JPG set
+
+- 文件：纸纹理/ambientcg_Cardboard004.jpg
+  来源：ambientCG
+  原图URL：https://ambientcg.com/a/Cardboard004
+  条目页：https://ambientcg.com/a/Cardboard004
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Lennart Demes / ambientCG
+  标题：Cardboard004
+  尺寸：1024x1024
+  访问日期：2026-10-09
+  处理：Color map extracted from 1K JPG set
+
+- 文件：纸纹理/ambientcg_Paper001.jpg
+  来源：ambientCG
+  原图URL：https://ambientcg.com/a/Paper001
+  条目页：https://ambientcg.com/a/Paper001
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Lennart Demes / ambientCG
+  标题：Paper001
+  尺寸：1024x600
+  访问日期：2026-10-09
+  处理：Color map extracted from 1K JPG set
+
+- 文件：纸纹理/ambientcg_Paper002.jpg
+  来源：ambientCG
+  原图URL：https://ambientcg.com/a/Paper002
+  条目页：https://ambientcg.com/a/Paper002
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Lennart Demes / ambientCG
+  标题：Paper002
+  尺寸：794x1024
+  访问日期：2026-10-09
+  处理：Color map extracted from 1K JPG set
+
+- 文件：纸纹理/ambientcg_Paper003.jpg
+  来源：ambientCG
+  原图URL：https://ambientcg.com/a/Paper003
+  条目页：https://ambientcg.com/a/Paper003
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Lennart Demes / ambientCG
+  标题：Paper003
+  尺寸：1024x1024
+  访问日期：2026-10-09
+  处理：Color map extracted from 1K JPG set
+
+- 文件：纸纹理/ambientcg_Paper004.jpg
+  来源：ambientCG
+  原图URL：https://ambientcg.com/a/Paper004
+  条目页：https://ambientcg.com/a/Paper004
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Lennart Demes / ambientCG
+  标题：Paper004
+  尺寸：1024x1024
+  访问日期：2026-10-09
+  处理：Color map extracted from 1K JPG set
+
+- 文件：纸纹理/ambientcg_Paper005.jpg
+  来源：ambientCG
+  原图URL：https://ambientcg.com/a/Paper005
+  条目页：https://ambientcg.com/a/Paper005
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Lennart Demes / ambientCG
+  标题：Paper005
+  尺寸：1024x1024
+  访问日期：2026-10-09
+  处理：Color map extracted from 1K JPG set
+
+- 文件：纸纹理/ambientcg_Paper006.jpg
+  来源：ambientCG
+  原图URL：https://ambientcg.com/a/Paper006
+  条目页：https://ambientcg.com/a/Paper006
+  授权：CC0 1.0（允许商用与再分发，无需署名）
+  作者：Lennart Demes / ambientCG
+  标题：Paper006
+  尺寸：1024x1024
+  访问日期：2026-10-09
+  处理：Color map extracted from 1K JPG set

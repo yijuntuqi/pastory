@@ -1,6 +1,8 @@
 <script lang="ts">
   import { itemSrc } from './user-assets.svelte'
-  import { stickerFilter } from './sticker'
+  import { itemFilter, paperOn } from './sticker'
+  import { settings } from './settings.svelte'
+  import { PAPER_TEX_ALPHA, paperClip, paperEdge } from './look'
   import type { Editor } from './editor.svelte'
   import type { Item } from './types'
 
@@ -101,6 +103,49 @@
       return { x, y }
     })
     return () => editor.setDropResolver(null)
+  })
+
+  // ---- 动效：全在单个素材元素上做，不动画布容器 ----
+  /** 刚刚落下的素材：播一次弹入 */
+  let popId = $state<string | null>(null)
+  /** 被删掉 / 撤销掉的素材：淡出一下再移除 */
+  let ghosts = $state<{ key: string; item: Item }[]>([])
+  let ghostSeq = 0
+  let prevItems: Item[] = []
+
+  function loopClass(item: Item): string {
+    if (!settings.motion || !item.loop) return ''
+    return 'm-' + item.loop
+  }
+
+  $effect(() => {
+    const id = editor.lastAdded
+    if (!id || !settings.motion) return
+    popId = id
+    const t = setTimeout(() => {
+      if (popId === id) popId = null
+    }, 240)
+    return () => clearTimeout(t)
+  })
+
+  $effect(() => {
+    const current = editor.page.items
+    const ids = new Set(current.map((i) => i.id))
+    const prev = prevItems
+    prevItems = current.map((i) => ({ ...i }) as Item)
+    if (!settings.motion) {
+      if (ghosts.length) ghosts = []
+      return
+    }
+    for (const old of prev) {
+      if (ids.has(old.id)) continue
+      ghostSeq += 1
+      const key = 'g' + ghostSeq
+      ghosts.push({ key, item: old })
+      setTimeout(() => {
+        ghosts = ghosts.filter((g) => g.key !== key)
+      }, 260)
+    }
   })
 
   function mid() {
@@ -261,19 +306,45 @@
   const hs = $derived(Math.round(16 / Math.max(zoom, 0.3)))
 </script>
 
+{#snippet visual(item: Item, cls: string, active: boolean)}
+  <div class="looper {cls}" style="filter:{itemFilter(item, { depth: settings.depth, active })};">
+    {#if paperOn(item)}
+      <div
+        class="paper"
+        style="clip-path:{paperClip(item.id)}; padding:{paperEdge(item.w, item.h)}px;"
+      >
+        <img class="photo" src={itemSrc(item.asset)} alt="" draggable="false" />
+        <span class="sheen"></span>
+      </div>
+    {:else}
+      <img class="plain" src={itemSrc(item.asset)} alt="" draggable="false" />
+    {/if}
+  </div>
+{/snippet}
+
 <svelte:window on:pointermove={onMove} on:pointerup={onUp} on:pointercancel={onUp} />
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="viewport" bind:this={viewport} onwheel={onWheel}>
+<div class="viewport" class:tilt={settings.tilt} bind:this={viewport} onwheel={onWheel}>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
+  <div
     class="stage"
     class:dropping={!!editor.drag?.over}
+    class:no-motion={!settings.motion}
     bind:this={stageEl}
     onpointerdown={onDown}
     style="width:{editor.page.width}px; height:{editor.page.height}px; background:{editor.page
-      .bg.color}; transform: translate({panX}px, {panY}px) scale({zoom});"
+      .bg.color}; transform: translate({panX}px, {panY}px) scale({zoom}){settings.tilt
+      ? ' translate(50%, 50%) rotateX(7deg) rotateY(-4deg) translate(-50%, -50%)'
+      : ''};"
   >
+    {#if editor.page.bg.tex}
+      <div
+        class="bg bg-tex"
+        style="background-image:url('{editor.page.bg.tex}'); opacity:{PAPER_TEX_ALPHA};"
+      ></div>
+    {/if}
+
     {#if editor.page.bg.type === 'dots'}
       <div class="bg bg-dots"></div>
     {:else if editor.page.bg.type === 'grid'}
@@ -285,25 +356,31 @@
     <div class="grain"></div>
 
     {#each editor.page.items as item (item.id)}
-      <img
+      <div
         class="item"
-        src={itemSrc(item.asset)}
-        alt=""
-        draggable="false"
-        style="filter:{stickerFilter(item)}; left:{item.x}px; top:{item.y}px; width:{item.w}px; height:{item
-          .h}px; opacity:{item
+        style="left:{item.x}px; top:{item.y}px; width:{item.w}px; height:{item.h}px; opacity:{item
           .opacity ?? 1}; z-index:{item.z}; transform: translate(-50%, -50%) rotate({item.rot}deg) scaleX({item
-          .flip
-          ? -1
-          : 1});"
-      />
+          .flip ? -1 : 1}) scale({editor.selected === item.id ? 1.04 : 1});"
+      >
+        <div class="pop" class:on={popId === item.id}>
+          {@render visual(item, loopClass(item), editor.selected === item.id)}
+        </div>
+      </div>
+    {/each}
+
+    {#each ghosts as g (g.key)}
+      <div
+        class="item gone"
+        style="left:{g.item.x}px; top:{g.item.y}px; width:{g.item.w}px; height:{g.item.h}px; opacity:{g
+          .item.opacity ?? 1}; z-index:{g.item.z}; transform: translate(-50%, -50%) rotate({g.item
+          .rot}deg) scaleX({g.item.flip ? -1 : 1});"
+      >
+        {@render visual(g.item, '', false)}
+      </div>
     {/each}
 
     {#if editor.drag?.over}
-      <div
-        class="drop-hint"
-        style="left:{editor.drag.pageX}px; top:{editor.drag.pageY}px;"
-      ></div>
+      <div class="drop-hint" style="left:{editor.drag.pageX}px; top:{editor.drag.pageY}px;"></div>
     {/if}
 
     {#if sel}
@@ -341,6 +418,12 @@
     background: var(--paper-3);
   }
 
+  /* 整页 3D 透视：默认关闭，开着会影响导出观感 */
+  .viewport.tilt {
+    perspective: 1400px;
+    perspective-origin: 50% 40%;
+  }
+
   .stage {
     position: absolute;
     left: 0;
@@ -361,6 +444,11 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
+  }
+
+  .bg-tex {
+    background-size: cover;
+    background-position: center;
   }
 
   .bg-dots {
@@ -386,6 +474,143 @@
     pointer-events: none;
     user-select: none;
     -webkit-user-drag: none;
+    transition: transform 0.16s ease;
+  }
+
+  .pop,
+  .looper,
+  .paper,
+  .plain {
+    width: 100%;
+    height: 100%;
+  }
+
+  .pop {
+    position: relative;
+  }
+
+  /* 落下时的弹入：啪地贴上去，约 200ms */
+  .pop.on {
+    animation: pop-in 200ms cubic-bezier(0.2, 1.4, 0.5, 1);
+  }
+
+  .looper {
+    position: relative;
+    transition: filter 0.16s ease;
+  }
+
+  .plain {
+    display: block;
+    object-fit: contain;
+  }
+
+  /* 位图贴纸的纸片外观：白边是 padding 撑出来的，剪边靠上面的 clip-path */
+  .paper {
+    position: relative;
+    background: #fff;
+  }
+
+  .photo {
+    display: block;
+    object-fit: cover;
+  }
+
+  .sheen {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.28),
+      rgba(255, 255, 255, 0) 42%,
+      rgba(58, 51, 44, 0.1)
+    );
+  }
+
+  /* 循环动效：只动 transform，不碰会触发重排的属性 */
+  .looper.m-breath {
+    animation: loop-breath 3.2s ease-in-out infinite;
+  }
+
+  .looper.m-sway {
+    animation: loop-sway 2.6s ease-in-out infinite;
+  }
+
+  .looper.m-float {
+    animation: loop-float 3.6s ease-in-out infinite;
+  }
+
+  @keyframes pop-in {
+    0% {
+      transform: scale(1.16);
+      opacity: 0.45;
+    }
+
+    60% {
+      transform: scale(0.975);
+      opacity: 1;
+    }
+
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes loop-breath {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+
+    50% {
+      transform: scale(1.04);
+    }
+  }
+
+  @keyframes loop-sway {
+    0%,
+    100% {
+      transform: rotate(-2.5deg);
+    }
+
+    50% {
+      transform: rotate(2.5deg);
+    }
+  }
+
+  @keyframes loop-float {
+    0%,
+    100% {
+      transform: translateY(-2.5px);
+    }
+
+    50% {
+      transform: translateY(2.5px);
+    }
+  }
+
+  /* 删除 / 撤销时的淡出 */
+  .item.gone {
+    animation: ghost-out 220ms ease forwards;
+  }
+
+  @keyframes ghost-out {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
+  }
+
+  /* 动效总开关：立刻安静 */
+  .stage.no-motion .item,
+  .stage.no-motion .pop,
+  .stage.no-motion .looper {
+    animation: none !important;
+    transition: none !important;
   }
 
   /* 落点提示：拖拽经过画布时显示十字定位点 */
@@ -443,6 +668,7 @@
   .handle.rotate {
     border-color: var(--sage);
   }
+
   .grain {
     position: absolute;
     inset: 0;

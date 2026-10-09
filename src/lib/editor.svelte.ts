@@ -1,5 +1,6 @@
 import { ASSET_MAP } from './assets'
 import { newPage, uid } from './templates'
+import type { LoopId } from './look'
 import { stickerOn } from './sticker'
 import type { BgType, Item, PageDoc } from './types'
 
@@ -63,6 +64,8 @@ function load(): PageDoc | null {
 export class Editor {
   page = $state<PageDoc>(load() ?? newPage())
   selected = $state<string | null>(null)
+  /** 刚刚放下的素材 id：画布据此播一次弹入动效 */
+  lastAdded = $state<string | null>(null)
   past = $state<PageDoc[]>([])
   future = $state<PageDoc[]>([])
 
@@ -181,6 +184,7 @@ export class Editor {
     }
     this.page.items.push(item)
     this.selected = item.id
+    this.lastAdded = item.id
     this.save()
   }
 
@@ -199,6 +203,7 @@ export class Editor {
     }
     this.page.items.push(item)
     this.selected = item.id
+    this.lastAdded = item.id
     this.save()
   }
 
@@ -264,6 +269,23 @@ export class Editor {
     if (!item) return
     this.mark()
     item.sticker = !stickerOn(item)
+    this.save()
+  }
+
+  /** 给选中的素材挂一个循环动效；传空字符串表示关掉 */
+  setLoop(loop: LoopId | '') {
+    const item = this.selectedItem
+    if (!item) return
+    this.mark()
+    item.loop = loop ? loop : undefined
+    this.save()
+  }
+
+  /** 切换纸面底纹；传 null 表示去掉底纹 */
+  setBgTex(tex: string | null) {
+    const { type, color } = this.page.bg
+    this.mark()
+    this.page.bg = tex ? { type, color, tex } : { type, color }
     this.save()
   }
 

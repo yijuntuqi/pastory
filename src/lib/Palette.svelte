@@ -45,6 +45,21 @@
   let swallowClick = false
 
   const builtin = $derived(cat === 'mine' ? [] : ASSETS.filter((a) => a.cat === cat))
+  /** 素材包按子目录分组展示，其余分类照旧平铺 */
+  const packGroups = $derived.by(() => {
+    const groups: { name: string; items: AssetDef[] }[] = []
+    for (const a of ASSETS) {
+      if (a.cat !== 'pack') continue
+      const name = a.group ?? '素材包'
+      let g = groups.find((x) => x.name === name)
+      if (!g) {
+        g = { name, items: [] }
+        groups.push(g)
+      }
+      g.items.push(a)
+    }
+    return groups
+  })
   const mine = $derived([...userAssets.entries()] as [string, UserAsset][])
   const cropSrc = $derived(cropId ? (userAssets.get(cropId)?.src ?? null) : null)
 
@@ -250,6 +265,20 @@
     onchange={onPick}
   />
 
+  {#snippet cellBtn(a: AssetDef)}
+    <button
+      class="cell"
+      class:paper={a.paper === true}
+      class:dragging={dragId === a.id}
+      title={a.name}
+      onpointerdown={(e) => beginBuiltin(e, a)}
+      onclick={() => onClickCell(() => add(a.id, a.name))}
+    >
+      <img src={assetUrl(a)} alt={a.name} draggable="false" />
+      <span>{a.name}</span>
+    </button>
+  {/snippet}
+
   <div class="grid scroll">
     {#if cat === 'mine'}
       {#if mine.length === 0}
@@ -273,18 +302,19 @@
         {/each}
       {/if}
     {:else}
-      {#each builtin as a (a.id)}
-        <button
-          class="cell"
-          class:dragging={dragId === a.id}
-          title={a.name}
-          onpointerdown={(e) => beginBuiltin(e, a)}
-          onclick={() => onClickCell(() => add(a.id, a.name))}
-        >
-          <img src={assetUrl(a)} alt={a.name} draggable="false" />
-          <span>{a.name}</span>
-        </button>
-      {/each}
+      {#if cat === 'pack'}
+        {#each packGroups as g (g.name)}
+          <h4 class="group">{g.name}</h4>
+          {#each g.items as a (a.id)}
+            {@render cellBtn(a)}
+          {/each}
+        {/each}
+        <p class="credit">素材来自 The Met / Cleveland Museum of Art / ambientCG，授权 CC0。</p>
+      {:else}
+        {#each builtin as a (a.id)}
+          {@render cellBtn(a)}
+        {/each}
+      {/if}
     {/if}
   </div>
 
@@ -445,6 +475,29 @@
     line-height: 1;
   }
 
+  .cell.paper img {
+    padding: 3px;
+    background: #fff;
+    border-radius: 5px;
+  }
+
+  .group {
+    grid-column: 1 / -1;
+    margin: 4px 0 0;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+  }
+
+  .credit {
+    grid-column: 1 / -1;
+    margin: 2px 0 0;
+    font-size: 10px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+
   .cell.mine {
     position: relative;
     padding: 6px;
@@ -530,6 +583,17 @@
     .grid > .empty {
       flex: 1 1 auto;
       min-width: 200px;
+    }
+
+    .grid > .group {
+      flex: 0 0 auto;
+      align-self: center;
+      padding: 0 2px;
+    }
+
+    .grid > .credit {
+      flex: 0 0 auto;
+      width: 200px;
     }
   }
 </style>

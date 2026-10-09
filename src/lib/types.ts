@@ -1,3 +1,5 @@
+import type { LoopId } from './look'
+
 export interface Item {
   id: string
   /** 素材 id，对应 assets.ts 里的 ASSETS */
@@ -17,6 +19,8 @@ export interface Item {
   sticker?: boolean
   /** 层级，越小越靠下 */
   z: number
+  /** 循环动效：breath 呼吸 / sway 摇摆 / float 漂浮；不设置表示不动 */
+  loop?: LoopId
 }
 
 export type BgType = 'plain' | 'dots' | 'grid' | 'lined'
@@ -29,6 +33,8 @@ export interface PageDoc {
   bg: {
     type: BgType
     color: string
+    /** 纸面底纹素材（public 下的相对 URL） */
+    tex?: string
   }
   items: Item[]
 }
