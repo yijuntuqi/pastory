@@ -56,9 +56,8 @@ export async function loadUserAssets(): Promise<void> {
   }
 }
 
-async function shrink(file: File): Promise<UserAsset> {
-  const bmp = await createImageBitmap(file)
-  const ratio = Math.min(1, MAX_SIDE / Math.max(bmp.width, bmp.height))
+async function shrinkBitmap(bmp: ImageBitmap, maxSide = MAX_SIDE): Promise<UserAsset> {
+  const ratio = Math.min(1, maxSide / Math.max(bmp.width, bmp.height))
   const w = Math.max(1, Math.round(bmp.width * ratio))
   const h = Math.max(1, Math.round(bmp.height * ratio))
   const canvas = document.createElement('canvas')
@@ -67,27 +66,47 @@ async function shrink(file: File): Promise<UserAsset> {
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('no 2d context')
   ctx.drawImage(bmp, 0, 0, w, h)
-  if (typeof bmp.close === 'function') bmp.close()
   return { src: canvas.toDataURL('image/png'), w, h }
 }
 
-export async function importFiles(files: FileList | File[]): Promise<number> {
-  let n = 0
+async function shrink(file: File): Promise<UserAsset> {
+  const bmp = await createImageBitmap(file)
+  const out = await shrinkBitmap(bmp)
+  if (typeof bmp.close === 'function') bmp.close()
+  return out
+}
+
+function newId(): string {
+  return 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+}
+
+export async function importFiles(files: FileList | File[]): Promise<string[]> {
+  const ids: string[] = []
   for (const file of Array.from(files)) {
     if (!file.type.startsWith('image/')) continue
     if (file.size > 12 * 1024 * 1024) continue
     try {
       const asset = await shrink(file)
-      const id = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+      const id = newId()
       userAssets.set(id, asset)
       const db = await openDB()
       db.transaction(STORE, 'readwrite').objectStore(STORE).put(asset, id)
-      n += 1
+      ids.push(id)
     } catch {
       /* skip this file */
     }
   }
-  return n
+  return ids
+}
+
+export async function replaceUserAsset(id: string, asset: UserAsset): Promise<void> {
+  userAssets.set(id, asset)
+  try {
+    const db = await openDB()
+    db.transaction(STORE, 'readwrite').objectStore(STORE).put(asset, id)
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function removeUserAsset(id: string): Promise<void> {

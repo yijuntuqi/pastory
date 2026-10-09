@@ -1,4 +1,4 @@
-export type CatId = 'tape' | 'note' | 'stamp' | 'plant' | 'deco' | 'frame' | 'pro'
+export type CatId = 'tape' | 'note' | 'stamp' | 'plant' | 'deco' | 'frame' | 'pro' | 'cut'
 
 export interface AssetDef {
   id: string
@@ -10,7 +10,8 @@ export interface AssetDef {
 }
 
 export const CATEGORIES: { id: CatId; name: string }[] = [
-  { id: 'pro', name: '\u7cbe\u9009' },
+  { id: 'pro', name: '精选' },
+  { id: 'cut', name: '开窗' },
   { id: 'tape', name: '纸胶带' },
   { id: 'note', name: '便签' },
   { id: 'stamp', name: '印章' },
@@ -20,6 +21,7 @@ export const CATEGORIES: { id: CatId; name: string }[] = [
 ]
 
 import { PRO_ASSETS } from './pro-assets'
+import { PRO_ASSETS_2 } from './pro-assets-2'
 const NS = 'xmlns="http://www.w3.org/2000/svg"'
 
 function tape(id: string, name: string, base: string, over: string) {
@@ -307,7 +309,7 @@ const frames = [
   },
 ]
 
-export const ASSETS: AssetDef[] = [...PRO_ASSETS, ...tapes, ...notes, ...stamps, ...plants, ...decos, ...frames]
+export const ASSETS: AssetDef[] = [...PRO_ASSETS, ...PRO_ASSETS_2, ...tapes, ...notes, ...stamps, ...plants, ...decos, ...frames]
 
 export const ASSET_MAP: Record<string, AssetDef> = Object.fromEntries(
   ASSETS.map((a) => [a.id, a]),

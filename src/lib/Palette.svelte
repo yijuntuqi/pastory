@@ -4,10 +4,12 @@
   import {
     userAssets,
     importFiles,
+    replaceUserAsset,
     removeUserAsset,
     loadUserAssets,
     type UserAsset,
   } from './user-assets.svelte'
+  import CropDialog from './CropDialog.svelte'
   import type { Editor } from './editor.svelte'
 
   let { editor }: { editor: Editor } = $props()
@@ -18,9 +20,11 @@
   let tip = $state('')
   let busy = $state(false)
   let fileEl = $state<HTMLInputElement | null>(null)
+  let cropId = $state<string | null>(null)
 
   const builtin = $derived(cat === 'mine' ? [] : ASSETS.filter((a) => a.cat === cat))
   const mine = $derived([...userAssets.entries()] as [string, UserAsset][])
+  const cropSrc = $derived(cropId ? (userAssets.get(cropId)?.src ?? null) : null)
 
   onMount(() => {
     void loadUserAssets()
@@ -49,14 +53,28 @@
     if (!files || files.length === 0) return
     busy = true
     try {
-      const n = await importFiles(files)
-      flash(n > 0 ? `已导入 ${n} 张` : '没有可导入的图片')
+      const ids = await importFiles(files)
+      if (ids.length === 0) {
+        flash('没有可导入的图片')
+      } else if (ids.length === 1) {
+        cropId = ids[0]
+      } else {
+        flash(`已导入 ${ids.length} 张`)
+      }
     } catch {
       flash('导入失败')
     } finally {
       busy = false
       input.value = ''
     }
+  }
+
+  async function onCropDone(out: { src: string; w: number; h: number }) {
+    const id = cropId
+    cropId = null
+    if (!id) return
+    await replaceUserAsset(id, out)
+    flash('已裁剪')
   }
 </script>
 
@@ -91,7 +109,7 @@
     {#if cat === 'mine'}
       {#if mine.length === 0}
         <p class="empty">
-          还没有自己的图片。点上面「导入图片」，把收藏的手帐图、贴纸、照片加进来，就能直接放到手帐上。图片只保存在你这台设备里，不会上传到服务器。
+          还没有自己的图片。点上面「导入图片」，把收藏的手帐图、贴纸、照片加进来。单张导入会先让你裁剪，只留想用的那一块；之后随时点缩略图右下角的剪刀重新裁。图片只保存在你这台设备里，不会上传到服务器。
         </p>
       {:else}
         {#each mine as [id, a] (id)}
@@ -99,6 +117,7 @@
             <button class="thumb" title="加入手帐" onclick={() => addMine(id, a)}>
               <img src={a.src} alt="" draggable="false" />
             </button>
+            <button class="cut" title="裁剪" onclick={() => (cropId = id)}>✂</button>
             <button class="del" title="删除" onclick={() => void removeUserAsset(id)}>×</button>
           </div>
         {/each}
@@ -117,6 +136,10 @@
     <div class="tip">{tip}</div>
   {/if}
 </aside>
+
+{#if cropSrc}
+  <CropDialog src={cropSrc} onconfirm={onCropDone} oncancel={() => (cropId = null)} />
+{/if}
 
 <style>
   .palette {
@@ -254,6 +277,20 @@
     height: 100%;
     object-fit: contain;
     pointer-events: none;
+  }
+
+  .cut {
+    position: absolute;
+    top: 2px;
+    right: 26px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--ink);
+    font-size: 11px;
+    line-height: 1;
+    border: 1px solid var(--line);
   }
 
   .del {
