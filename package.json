@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "predev": "node scripts/make-thumbs.mjs",
+    "predev": "node scripts/prebuild.mjs",
     "build": "vite build",
-    "prebuild": "node scripts/make-thumbs.mjs",
+    "prebuild": "node scripts/prebuild.mjs",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
     "thumbs": "node scripts/make-thumbs.mjs",

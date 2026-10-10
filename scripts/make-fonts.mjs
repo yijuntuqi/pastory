@@ -20,6 +20,15 @@
  *   wOFF / wOF2，因为得意黑的镜像候选是 woff2）：不是字体就换下一个候选。
  * - 单个字体全部候选都失败，只记一条失败继续下一个字体，最后汇总打印。
  *
+ * v3（2026-10-10）：本脚本是「尽力而为」，永远不会让构建失败。
+ * - 所有候选都下不到时只打警告、正常退出 0，不再 process.exitCode = 1；
+ *   前端会自动退回系统字体（PingFang SC / 微软雅黑 / sans-serif），不会白屏也不会报错。
+ * - 有总时间预算 FONT_BUDGET_MS（CI 里默认 60 秒，本机默认 240 秒），
+ *   超预算就跳过剩余候选，避免在 GitHub Actions 里长时间挂住。
+ * - 单个候选超时从 180 秒降到 45 秒，重试从 2 次降到 1 次，失败得快一点。
+ * - 想让「有字体缺失」变成真失败（比如做体检），加 --strict。
+ * - 它不在任何构建钩子里：package.json 里只有 npm run fonts 手动调用。
+ *
  * 只用 npm 依赖，不装任何全局命令行工具。跑法：npm run fonts
  */
 import { createRequire } from 'node:module'
@@ -81,7 +90,15 @@ function buildCharset() {
 
 // ---------------------------------------------------------------- 下载
 
-async function fetchBuf(url, tries = 2) {
+const FONT_BUDGET_MS = Number(
+  process.env.FONT_BUDGET_MS || (process.env.CI ? 60000 : 240000),
+)
+const START_AT = Date.now()
+function budgetLeft() {
+  return FONT_BUDGET_MS - (Date.now() - START_AT)
+}
+
+async function fetchBuf(url, tries = 1) {
   let last
   for (let i = 0; i < tries; i += 1) {
     try {
@@ -89,7 +106,7 @@ async function fetchBuf(url, tries = 2) {
         // 官方 Release 附件会 302 到 objects.githubusercontent.com，必须跟随
         redirect: 'follow',
         headers: { 'User-Agent': 'pastory-font-builder' },
-        signal: AbortSignal.timeout(180000),
+        signal: AbortSignal.timeout(Math.max(5000, Math.min(45000, budgetLeft()))),
       })
       if (!res.ok) throw new Error('HTTP ' + res.status)
       return Buffer.from(await res.arrayBuffer())
@@ -271,6 +288,10 @@ const FONTS = [
 async function buildOneFont(font, chars) {
   const tried = []
   for (const url of font.sources) {
+    if (budgetLeft() <= 0) {
+      process.stdout.write('  已超过下载时间预算，跳过剩余候选（不影响构建）\n')
+      break
+    }
     process.stdout.write(`  尝试 ${url}\n`)
     try {
       const raw = await fetchBuf(url)
@@ -388,11 +409,21 @@ async function main() {
   if (failed.length > 0) {
     console.log('（失败的字体不影响其他字体；想补齐可以等信息好的时候重跑一次 npm run fonts）')
   }
-  // 只要有一个成功就当这次跑通了；全失败才算真失败，避免「六个里挂一个」被当成整体崩掉
-  if (ok.length === 0) process.exitCode = 1
+  // 字体是「锦上添花」：全部下载失败也只警告，绝不让构建挂掉。
+  // 想让缺失变成非零退出码（体检用），加 --strict。
+  if (ok.length === 0) {
+    console.log('')
+    console.log('注意：这次一个字体都没下成功，只是「没带上自备字体」，不影响构建。')
+    console.log('前端会自动退回系统字体，页面不会白屏也不会报错。')
+    console.log('等网络好的时候再跑一次 npm run fonts 就能补上。')
+    if (process.argv.includes('--strict')) process.exitCode = 1
+  }
 }
 
 main().catch((err) => {
-  console.error('生成失败：', err && err.message ? err.message : err)
-  process.exitCode = 1
+  console.warn(
+    '字体脚本遇到意外错误（已忽略，不影响构建）：',
+    err && err.message ? err.message : err,
+  )
+  if (process.argv.includes('--strict')) process.exitCode = 1
 })

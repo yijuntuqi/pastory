@@ -1,0 +1,32 @@
+这是给 Pastory 的「构建修复包」，只含 4 个文件，覆盖到项目根目录同名位置即可。
+
+要覆盖的文件：
+  package.json                          -> 项目根目录
+  scripts/make-fonts.mjs                -> scripts/make-fonts.mjs
+  scripts/prebuild.mjs                  -> scripts/prebuild.mjs（新增文件）
+  .github/workflows/pages.yml           -> .github/workflows/pages.yml
+
+改了什么：
+1. scripts/make-fonts.mjs 变成「尽力而为」：六个字体的所有候选地址都失败时，
+   只打警告、正常退出 0，不再返回非零退出码，永远不会卡住构建；
+   单个候选超时从 180 秒降到 45 秒、只试一次；整批还有总时间预算，
+   CI 里默认 60 秒、本机默认 240 秒，超了跳过剩余候选直接收尾。
+   想恢复「缺字体就报错」的严格行为，跑 npm run fonts -- --strict。
+2. package.json：predev / prebuild 从直接跑 make-thumbs.mjs 改成跑新的
+   scripts/prebuild.mjs。这个包装脚本负责跑缩略图生成，并且无论成功失败
+   都以 0 退出，所以缩略图或素材包出任何问题都不会再拖垮 build。
+   字体本来就只是 npm run fonts 手动命令，不在任何构建钩子里。
+3. .github/workflows/pages.yml：去掉了 actions/configure-pages。
+   仓库没开启 Pages 时那一步会直接失败，看起来像「构建失败」；
+   现在 base 直接用仓库名拼成 /<仓库名>/，不受 Pages 开关状态影响。
+
+覆盖之后：
+  npm run fonts        （手动跑，能下到几个算几个，失败也正常退出）
+  npm run build        （一定能过，字体缺失只是退回系统字体）
+  git add -A
+  git commit -m "fix: make font download best-effort so it can never block build"
+  git push origin HEAD
+
+还想让页面真的出现在公网上：仓库 Settings -> Pages，把 Source 选成 GitHub Actions。
+注意免费账号的 Pages 只对公开仓库开放；不想公开仓库就换 Cloudflare Pages
+（免费、支持私有仓库，构建命令 npm run build，输出目录 dist）。

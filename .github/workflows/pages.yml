@@ -19,20 +19,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      # 这一步会输出 base_path（项目站点是 /<repo>，用户站点是空串），
-      # 用它喂给 vite 的 base，仓库改名也不用再动配置。
-      - uses: actions/configure-pages@v5
-        id: pages
+
       - name: Install dependencies
         run: npm ci
+
+      # 这里刻意不再用 actions/configure-pages：
+      # 仓库还没在 Settings -> Pages 里把 Source 设成 GitHub Actions 时，
+      # 它会直接报「Get Pages site failed」把整个 build 卡掉，看起来像是别的原因失败。
+      # 项目站点的 base 就是 /<仓库名>/，直接用仓库名拼出来最稳。
+      # 字体不在构建链里：npm run fonts 是手动命令，build 不依赖它。
       - name: Build
         env:
-          VITE_BASE: ${{ steps.pages.outputs.base_path }}/
+          VITE_BASE: /${{ github.event.repository.name }}/
         run: npm run build
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
