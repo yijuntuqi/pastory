@@ -1,6 +1,6 @@
 import type { LoopId } from './look'
 
-export type BrushId = 'pen' | 'pencil' | 'marker' | 'highlighter'
+export type BrushId = 'pen' | 'pencil' | 'marker' | 'highlighter' | 'doodle'
 
 /** 手写笔迹上的一个采样点 */
 export interface InkPoint {
@@ -18,7 +18,7 @@ export interface Stroke {
   id: string
   brush: BrushId
   color: string
-  /** 基础线宽（页面像素），未乘压力系数 */
+  /** 基础线宽（页面像素），未乘宽度驱动系数 */
   width: number
   points: InkPoint[]
 }
@@ -70,4 +70,6 @@ export interface TemplateDef {
   id: string
   name: string
   hint: string
+  /** 墨色提示：深色纸面的模板（如星空）会提醒用浅色墨水 */
+  inkTip?: string
 }

@@ -163,7 +163,7 @@ export async function exportPNG(page: PageDoc, want = 2): Promise<Blob> {
 
   // 墨迹层：先单独渲染到一张透明画布再整层贴上，这样屏幕和导出的混合结果一致
   const inkLayer =
-    page.strokes.length > 0 ? inkLayerCanvas(page.strokes, page.width, page.height, scale) : null
+    page.strokes.length > 0 ? inkLayerCanvas(page.strokes, page.width, page.height, scale, settings.feel) : null
   if (inkLayer && !page.inkTop) ctx.drawImage(inkLayer, 0, 0)
 
   const used = Array.from(new Set(page.items.map((i) => i.asset)))

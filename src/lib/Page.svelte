@@ -3,7 +3,7 @@
   import { itemFilter, paperOn } from './sticker'
   import { settings } from './settings.svelte'
   import { PAPER_TEX_ALPHA, paperClip, paperEdge } from './look'
-  import { brushDef, MIN_SAMPLE_DIST, paintInk, paintStroke, speedToPressure, strokeHit } from './ink'
+  import { brushDef, makeSpeedMapper, MIN_SAMPLE_DIST, paintInk, paintStroke, smoothAlpha, strokeHit, strokeLength } from './ink'
   import type { Editor } from './editor.svelte'
   import type { Item, Stroke } from './types'
 
@@ -61,6 +61,11 @@
   let lastY = 0
   let lastT = 0
   let lastP = 0.6
+  /** 无压感输入的宽度映射器：每一笔重建一个，窗口平均 + 一阶滞后 */
+  let speedMap: ((speed: number) => number) | null = null
+  /** 指数平滑后的上一个采样点（防抖） */
+  let smoothX = 0
+  let smoothY = 0
   let rafId = 0
   let inkSeq = 0
 
@@ -142,6 +147,8 @@
   // 墨迹数据变动（落笔 / 擦除 / 撤销重做）时只重画已落笔的那一层
   $effect(() => {
     void editor.page.strokes.length
+    void settings.jitter
+    void settings.nib
     drawBase()
   })
 
@@ -232,7 +239,7 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.clearRect(0, 0, inkBase.width, inkBase.height)
     ctx.setTransform(INK_RES, 0, 0, INK_RES, 0, 0)
-    paintInk(ctx, editor.page.strokes)
+    paintInk(ctx, editor.page.strokes, settings.feel)
   }
 
   /** 正在画的那一笔：单独一层，每一帧只重画它自己，抬笔前就能看见 */
@@ -243,7 +250,7 @@
     ctx.clearRect(0, 0, inkLive.width, inkLive.height)
     if (!stroke) return
     ctx.setTransform(INK_RES, 0, 0, INK_RES, 0, 0)
-    paintStroke(ctx, stroke)
+    paintStroke(ctx, stroke, settings.feel)
   }
 
   function scheduleLive(): void {
@@ -278,6 +285,9 @@
     lastY = p.y
     lastT = e.timeStamp
     lastP = strokeByPressure ? pressureOf(e) : 0.6
+    speedMap = makeSpeedMapper(settings.feel)
+    smoothX = p.x
+    smoothY = p.y
     stroke = {
       id: inkId(),
       brush: def.id,
@@ -299,7 +309,12 @@
   function appendPoint(e: PointerEvent): void {
     const s = stroke
     if (!s) return
-    const p = toPage(e.clientX, e.clientY)
+    const raw = toPage(e.clientX, e.clientY)
+    // 防抖：先对采样点做指数平滑，再去掉鼠标的高频抖动
+    const alpha = smoothAlpha(settings.feel)
+    smoothX += (raw.x - smoothX) * alpha
+    smoothY += (raw.y - smoothY) * alpha
+    const p = { x: smoothX, y: smoothY }
     const moved = Math.hypot(p.x - lastX, p.y - lastY)
     if (moved < MIN_SAMPLE_DIST) return
     const dt = Math.max(1, e.timeStamp - lastT)
@@ -307,9 +322,9 @@
     if (strokeByPressure) {
       value = pressureOf(e)
       const tilt = Math.max(Math.abs(e.tiltX), Math.abs(e.tiltY))
-      if (tilt > 0) value = clamp(value * (1 + (tilt / 90) * 0.35), 0, 1)
+      if (brushDef(s.brush).tilt && tilt > 0) value = clamp(value * (1 + (tilt / 90) * 0.35), 0, 1)
     } else {
-      value = speedToPressure(moved / dt, lastP)
+      value = speedMap ? speedMap(moved / dt) : lastP
     }
     lastP = value
     lastX = p.x
@@ -330,7 +345,8 @@
       rafId = 0
     }
     drawLive()
-    if (keep && s && s.points.length > 1) editor.addInk(s)
+    // 剔除毛刺：单点或长度不到 3 个页面像素的抖动笔画不留
+    if (keep && s && s.points.length > 1 && strokeLength(s) >= 3) editor.addInk(s)
   }
 
   /** 整笔擦除：点中哪一笔就删掉整条，不做像素级擦除 */
