@@ -31,6 +31,7 @@ export const CATEGORIES: { id: CatId; name: string }[] = [
 import { PRO_ASSETS } from './pro-assets'
 import { PRO_ASSETS_2 } from './pro-assets-2'
 import { PACK_ASSETS } from './pack-assets'
+import { PRO_ASSETS_3 } from './pro-assets-3'
 const NS = 'xmlns="http://www.w3.org/2000/svg"'
 
 function tape(id: string, name: string, base: string, over: string) {
@@ -318,7 +319,7 @@ const frames = [
   },
 ]
 
-export const ASSETS: AssetDef[] = [...PRO_ASSETS, ...PRO_ASSETS_2, ...tapes, ...notes, ...stamps, ...plants, ...decos, ...frames, ...PACK_ASSETS]
+export const ASSETS: AssetDef[] = [...PRO_ASSETS, ...PRO_ASSETS_2, ...PRO_ASSETS_3, ...tapes, ...notes, ...stamps, ...plants, ...decos, ...frames, ...PACK_ASSETS]
 
 export const ASSET_MAP: Record<string, AssetDef> = Object.fromEntries(
   ASSETS.map((a) => [a.id, a]),
