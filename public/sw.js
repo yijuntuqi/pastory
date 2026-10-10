@@ -1,25 +1,43 @@
 /* Pastory 的 Service Worker：离线可用。
  *
  * 策略：
- * - 安装时预缓存「首屏外壳」：index.html、manifest、图标、favicon（很小）。
- * - 导航请求：网络优先，失败时回落到缓存里的 index.html，断网也能打开。
+ * - 安装时预缓存「首屏外壳」：首页、manifest、图标、favicon（很小）。
+ * - 导航请求：网络优先，失败时回落到缓存里的首页，断网也能打开。
  * - 其它同源 GET：缓存优先；第一次请求时按需写进缓存。
  *   因此字体、缩略图、以及用户真的用到的素材原图会被缓存，
  *   不会在首次访问时把 20 多 MB 素材一次性塞进缓存。
+ *
+ * 子路径适配（GitHub Pages 项目站点是 /<repo>/）：
+ * 所有路径都用 self.registration.scope 推出来的 BASE 拼，绝不再写死 '/'。
  */
-const VERSION = 'v1'
+const VERSION = 'v2'
 const SHELL = 'pastory-shell-' + VERSION
 const RUNTIME = 'pastory-runtime-' + VERSION
 const MAX_RUNTIME = 120
 
+/** 部署基路径，末尾一定带 '/'（根路径就是 '/'，项目站点是 '/pastory/'） */
+const BASE = (() => {
+  try {
+    return new URL(self.registration.scope).pathname
+  } catch {
+    return '/'
+  }
+})()
+
+/** 把站内相对路径拼成带基路径的地址 */
+function at(p) {
+  return BASE.replace(/\/+$/, '') + '/' + String(p).replace(/^\/+/, '')
+}
+
+const HOME = at('index.html')
+const ROOT = BASE
 const PRECACHE = [
-  '/',
-  '/index.html',
-  '/manifest.webmanifest',
-  '/favicon.svg',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/apple-touch-icon.png',
+  HOME,
+  at('manifest.webmanifest'),
+  at('favicon.svg'),
+  at('icon-192.png'),
+  at('icon-512.png'),
+  at('apple-touch-icon.png'),
 ]
 
 self.addEventListener('install', (event) => {
@@ -70,13 +88,13 @@ self.addEventListener('fetch', (event) => {
         try {
           const res = await fetch(req)
           const cache = await caches.open(SHELL)
-          cache.put('/index.html', res.clone())
+          cache.put(HOME, res.clone())
           return res
         } catch {
           const cache = await caches.open(SHELL)
           return (
-            (await cache.match('/index.html')) ||
-            (await cache.match('/')) ||
+            (await cache.match(HOME)) ||
+            (await cache.match(ROOT)) ||
             new Response('离线了，连上网络再打开一次就好。', {
               status: 503,
               headers: { 'Content-Type': 'text/plain; charset=utf-8' },

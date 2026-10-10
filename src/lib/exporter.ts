@@ -1,4 +1,5 @@
 import { itemSrc } from './user-assets.svelte'
+import { withBase } from './base'
 import { settings } from './settings.svelte'
 import { PAPER_TEX_ALPHA, paperEdge, paperOutline } from './look'
 import { paperOn } from './sticker'
@@ -9,7 +10,7 @@ import { isText, type Item, type PageDoc } from './types'
 
 const MAX_AREA = 16777216
 
-function loadImage(src: string): Promise<HTMLImageElement> {
+export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => resolve(img)
@@ -27,7 +28,7 @@ function cover(iw: number, ih: number, w: number, h: number) {
 }
 
 /** 背景在页面坐标系里画，外层统一 scale，所以各种底纹的间距不会跑偏 */
-function paintBg(ctx: CanvasRenderingContext2D, page: PageDoc, tex: HTMLImageElement | null) {
+export function paintBg(ctx: CanvasRenderingContext2D, page: PageDoc, tex: HTMLImageElement | null) {
   const w = page.width
   const h = page.height
   ctx.fillStyle = page.bg.color
@@ -99,18 +100,28 @@ function paperPath(seed: string, w: number, h: number): Path2D {
   return path
 }
 
-function drawItem(
+/** 动效导出的逐帧偏移：dx/dy 单位页面像素，drot 单位度，dscale 是额外缩放 */
+export interface ItemAnim {
+  dx?: number
+  dy?: number
+  drot?: number
+  dscale?: number
+}
+
+export function drawItem(
   ctx: CanvasRenderingContext2D,
   item: Item,
   img: HTMLImageElement,
   scale: number,
+  anim?: ItemAnim,
 ) {
   const w = item.w * scale
   const h = item.h * scale
   ctx.save()
   ctx.globalAlpha = item.opacity ?? 1
-  ctx.translate(item.x * scale, item.y * scale)
-  ctx.rotate((item.rot * Math.PI) / 180)
+  ctx.translate((item.x + (anim?.dx ?? 0)) * scale, (item.y + (anim?.dy ?? 0)) * scale)
+  ctx.rotate(((item.rot + (anim?.drot ?? 0)) * Math.PI) / 180)
+  if (anim?.dscale && anim.dscale !== 1) ctx.scale(anim.dscale, anim.dscale)
   if (item.flip) ctx.scale(-1, 1)
 
   if (settings.depth && paperOn(item)) {
@@ -160,7 +171,7 @@ export async function exportPNG(page: PageDoc, want = 2): Promise<Blob> {
   let tex: HTMLImageElement | null = null
   if (page.bg.tex) {
     try {
-      tex = await loadImage(page.bg.tex)
+      tex = await loadImage(withBase(page.bg.tex))
     } catch {
       tex = null
     }

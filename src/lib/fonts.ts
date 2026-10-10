@@ -10,6 +10,8 @@
  * 才用 FontFace 去 fetch 对应的 woff2，因此首屏速度不受字体影响。
  */
 
+import { withBase } from './base'
+
 export type FontId = 'wenkai' | 'kuaile' | 'serif' | 'sans' | 'smiley' | 'qingke'
 
 export type FontTier = 'hand' | 'doodle' | 'serif' | 'sans' | 'title'
@@ -156,7 +158,7 @@ export function ensureFont(id: FontId): Promise<void> {
   }
   const job = (async () => {
     try {
-      const face = new FontFace(def.family, `url('${def.file}')`, {
+      const face = new FontFace(def.family, `url('${withBase(def.file)}')`, {
         weight: String(def.weight),
         style: 'normal',
         display: 'swap',

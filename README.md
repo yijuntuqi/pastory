@@ -28,6 +28,15 @@ npm run build
 npm run preview
 ```
 
+首次跑 `npm run dev` / `npm run build` 会自动执行一次 `npm run thumbs`（素材包缩略图），
+所以不用手动记得这件事；也可以随时单独跑：
+
+```
+npm run thumbs         # 生成 public/手账素材包/thumbs/ 和 src/lib/thumbs-manifest.ts
+npm run thumbs:check   # 只检查：有源图缺缩略图就以退出码 1 结束
+npm run fonts          # 下载字体并裁子集（生成 public/fonts/*.woff2）
+```
+
 ## 目录结构
 
 ```
@@ -65,18 +74,73 @@ src/lib/exporter.ts       导出 PNG（1x / 2x / 3x，自动避开 iOS 画布上
 4. 顶部「导出图片」存成 PNG，可直接发小红书 / 朋友圈。
 5. 画布缩放：鼠标滚轮，或平板双指捧合；顶部「整页」一键回到全景。
 
-## 部署成网址（Netlify）
+## 部署成网址
 
-在 Netlify 里 Import 这个 GitHub 仓库，填：
+### 方式一：GitHub Pages（免费，但仓库必须是公开的）
 
-```
-Build command:    npm run build
-Publish directory: dist
-```
+仓库里已经带好工作流 `.github/workflows/pages.yml`，push 到 `main` 就自动发布，
+不用在本地做任何打包动作。
 
-以后每次 push，网站自动重新发布。URL 可以在 Site settings 里改成 pastory.netlify.app。
+1. push 代码到 GitHub 的 `main` 分支。
+2. 打开仓库的 **Settings → Pages**，把 **Source** 选成 **GitHub Actions**（只挑一次，之后长期有效）。
+3. 再 push 一次（或在 Actions 页面手动跑一次 Deploy to GitHub Pages），等它变绿。
+4. 站点地址是 `https://<用户名>.github.io/<仓库名>/`。
+
+两条要记住的限制：
+
+- **免费账号的 GitHub Pages 只能给公开仓库开站点。** 私有仓库想用 Pages 得升到付费套餐。
+- 项目站点跑在 `/<仓库名>/` 这个子路径下，所以 vite 的 base 不能写死成 `/`。
+  工作流里用 `actions/configure-pages` 算出 `base_path`，再通过环境变量 `VITE_BASE` 传给
+  `npm run build`；仓库改名也不用改代码。手动构建时同样可以指定：
+  `VITE_BASE=/pastory/ npm run build`（默认是 `/`，也就是根路径）。
+
+**不想把仓库公开？用下面的 Cloudflare Pages。**
+
+### 方式二：Cloudflare Pages（免费，支持私有仓库）
+
+Cloudflare Pages 的免费额度对个人项目够用，而且可以直接连私有仓库：
+
+1. 打开 Cloudflare Dashboard → **Workers & Pages → Create → Pages → Connect to Git**。
+2. 选这个仓库，构建设置填：
+
+   ```
+   Framework preset:  None
+   Build command:     npm run build
+   Build output dir:  dist
+   ```
+
+3. 环境变量不用加（默认根路径，base 就是 `/`）。保存后每次 push 自动发布。
+4. 有自己的域名可以在 Pages 项目里绑定。
+
+### 关于 Netlify
+
+以前的 Netlify 站点已经不用了（免费额度 300 credits 用尽、部署被暂停，不打算付费）。
+仓库里不再放 Netlify 的配置，也别再往那边部署。
 
 ## 本次升级
+
+### 收尾基础版（2026-10-10）
+
+1. **字体下载脚本修好了**：`npm run fonts` 不再走 jsdelivr 拉大字体（LXGW WenKai / Noto SC
+   都接近或超过 20MB，超过 jsdelivr 单文件上限，它返回的是错误页而不是字体，脚本会误判成
+   `Unrecognized font signature`）。现在按候选列表从各字体官方 Release 附件 / Google Fonts
+   仓库直连下载，跟随重定向，带 GitHub 加速镜像；每个候选下载完先验字体文件头，不是字体就换下一个；
+   单个字体失败不再打断整批，最后汇总打印成功和失败。
+2. **素材包缩略图覆盖全了**：六个子目录 73 个文件全部有 160px 缩略图，并且生成时会写出
+   `src/lib/thumbs-manifest.ts`，前端只在清单里查得到时才用缩略图，缺图自动回退原图；
+   `npm run thumbs:check` 可以核对覆盖率，孤儿缩略图会被清理。
+3. **部署换成 GitHub Pages**：`.github/workflows/pages.yml` push 到 main 自动发布，
+   vite 的 base 用 `VITE_BASE` 环境变量控制（默认根路径，Actions 里是 `/<仓库名>/`）；
+   PWA 的 manifest、start_url / scope、Service Worker 注册路径、站内素材地址全部按基路径拼。
+4. **基础排布**：选够两个以上元素（打开「多选」，电脑上也可以 Shift 点选），工具条出现排布条，
+   支持左 / 右 / 上 / 下对齐、水平居中、垂直居中、水平等距、垂直等距、网格对齐（20px），
+   作用对象是贴纸和文字，一次操作只记一条撤销。
+5. **动效导出**：导出面板里可以选「静态图片（PNG）」或「动效视频（MP4）」。
+   动效用 `canvas.captureStream` + `MediaRecorder` 录 3 / 4 / 5 秒，录制时显示进度；
+   元素的呼吸 / 摇摆 / 漂浮是周期函数，视频首尾相接可以无缝循环。
+   浏览器没给 MP4 编码器时会退到 WebM 并如实提示。不做 GIF；动态 WebP 这一版也没做
+   （WebCodecs 至今没有动效 WebP 编码器）。
+6. **页管理**：新增 / 切换 / 删除 / 调整页序。封面页与「整本套模板」这一版不做。
 
 ### 笔迹手感
 

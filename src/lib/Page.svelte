@@ -2,6 +2,7 @@
   import { itemSrc } from './user-assets.svelte'
   import { itemFilter, paperOn } from './sticker'
   import { settings } from './settings.svelte'
+  import { withBase } from './base'
   import { PAPER_TEX_ALPHA, paperClip, paperEdge } from './look'
   import { brushDef, makeSpeedMapper, MIN_SAMPLE_DIST, paintInk, paintStroke, smoothAlpha, strokeHit, strokeLength } from './ink'
   import { clearTextCache, cssFamilyOf, cssShadowOf, layoutOf, TEXT_MAX_W, TEXT_MIN_W } from './text'
@@ -446,6 +447,12 @@
     const p = toPage(e.clientX, e.clientY)
     const it = hit(p)
     if (it) {
+      // 多选模式（或按住 Shift）：点一下把元素加进/移出当前选区，不进入拖动
+      if (editor.multiMode || e.shiftKey) {
+        editor.toggleSelected(it.id)
+        mode = 'idle'
+        return
+      }
       editor.selected = it.id
       mode = 'move'
       d.id = it.id
@@ -765,7 +772,7 @@
     {#if editor.page.bg.tex}
       <div
         class="bg bg-tex"
-        style="background-image:url('{editor.page.bg.tex}'); opacity:{PAPER_TEX_ALPHA};"
+        style="background-image:url('{withBase(editor.page.bg.tex)}'); opacity:{PAPER_TEX_ALPHA};"
       ></div>
     {/if}
 
@@ -789,15 +796,16 @@
     {#each editor.page.items as item (item.id)}
       <div
         class="item"
+        class:sel={editor.selectedIds.length > 1 && editor.isSelected(item.id)}
         style="left:{item.x}px; top:{item.y}px; width:{item.w}px; height:{item.h}px; opacity:{item
           .opacity ?? 1}; z-index:{item.z}; transform: translate(-50%, -50%) rotate({item.rot}deg) scaleX({item
-          .flip ? -1 : 1}) scale({editor.selected === item.id ? 1.04 : 1});"
+          .flip ? -1 : 1}) scale({editor.isSelected(item.id) ? 1.04 : 1});"
       >
         <div class="pop" class:on={popId === item.id}>
           {#if isText(item)}
             {@render textVisual(item, editor.editing === item.id)}
           {:else}
-            {@render visual(item, loopClass(item), editor.selected === item.id)}
+            {@render visual(item, loopClass(item), editor.isSelected(item.id))}
           {/if}
         </div>
       </div>
@@ -822,7 +830,7 @@
       <div class="drop-hint" style="left:{editor.drag.pageX}px; top:{editor.drag.pageY}px;"></div>
     {/if}
 
-    {#if sel}
+    {#if sel && editor.selectedIds.length === 1}
       <div
         class="sel-box"
         style="left:{sel.x}px; top:{sel.y}px; width:{sel.w}px; height:{sel.h}px; transform: translate(-50%, -50%) rotate({sel
@@ -1210,5 +1218,11 @@
     z-index: 0;
     background-image: radial-gradient(rgba(60, 48, 32, 0.05) 1px, transparent 1px);
     background-size: 3px 3px;
+  }
+
+  /* 多选时每个入选元素描一圈虚线，一眼看出排布会动到哪些东西 */
+  .item.sel {
+    outline: 1.5px dashed var(--terra, #c97b63);
+    outline-offset: 2px;
   }
 </style>

@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "predev": "node scripts/make-thumbs.mjs",
     "build": "vite build",
+    "prebuild": "node scripts/make-thumbs.mjs",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
     "thumbs": "node scripts/make-thumbs.mjs",
+    "thumbs:check": "node scripts/make-thumbs.mjs --check",
     "fonts": "node scripts/make-fonts.mjs",
     "icons": "node scripts/make-icons.mjs"
   },

@@ -3,6 +3,8 @@ import { newPage, uid } from './templates'
 import type { LoopId } from './look'
 import { stickerOn } from './sticker'
 import { loadAsync, loadLocal, saveDoc } from './doc-store'
+import { loadPages, savePages } from './pages-store'
+import { applyLayout, type LayoutOp } from './layout'
 import { DEFAULT_FONT } from './fonts'
 import { DEFAULT_TEXT_W, TEXT_MAX_W, TEXT_MIN_W, textHeight } from './text'
 import { isText, type BgType, type Item, type PageDoc, type Stroke, type TextAlign } from './types'
@@ -119,9 +121,40 @@ function load(): PageDoc | null {
   return normalizeDoc(loadLocal())
 }
 
+/**
+ * 启动状态：把「单页文档」和「页列表」调和成一份。
+ * - 页列表（pages-store）里存所有页的快照，和当前页下标；
+ * - 单页文档（doc-store）里那一份永远是最新的当前页，所以只要 id 对得上就用它覆盖页列表里的那份，
+ *   这样即使页列表的快照旧了，也不会丢掉正在编辑的这一页。
+ */
+function bootstrap(): { pages: PageDoc[]; index: number } {
+  const current = load()
+  const stored = loadPages()
+  const pages: PageDoc[] = []
+  if (stored) {
+    for (const p of stored.pages) {
+      const fixed = normalizeDoc(p)
+      if (fixed) pages.push(fixed)
+    }
+  }
+  if (pages.length === 0) pages.push(current ?? newPage())
+  let index = stored ? Math.max(0, Math.min(stored.index, pages.length - 1)) : 0
+  if (index < 0 || index >= pages.length) index = 0
+  if (current && pages[index] && current.id === pages[index].id) pages[index] = current
+  return { pages, index }
+}
+
+const boot = bootstrap()
+
 export class Editor {
-  page = $state<PageDoc>(load() ?? newPage())
-  selected = $state<string | null>(null)
+  /** 多页文档：pages[pageIndex] 和 page 始终是同一份数据 */
+  pages = $state<PageDoc[]>(boot.pages)
+  pageIndex = $state(boot.index)
+  page = $state<PageDoc>(boot.pages[boot.index])
+  /** 多选：选中元素的 id 列表，selected 是其中最后一个（单选时就是它） */
+  private selIds = $state<string[]>([])
+  /** 多选模式：打开后点元素是「加进选区 / 移出选区」，触屏上不用键盘也能多选 */
+  multiMode = $state(false)
   /** 刚刚放下的素材 id：画布据此播一次弹入动效 */
   lastAdded = $state<string | null>(null)
   past = $state<PageDoc[]>([])
@@ -207,6 +240,47 @@ export class Editor {
     return true
   }
 
+  /** 主选中项（单选时就是它，多选时是最后一个点中的） */
+  get selected(): string | null {
+    return this.selIds.length > 0 ? this.selIds[this.selIds.length - 1] : null
+  }
+
+  set selected(v: string | null) {
+    this.selIds = v ? [v] : []
+  }
+
+  /** 当前选中的全部元素 id */
+  get selectedIds(): string[] {
+    return this.selIds
+  }
+
+  isSelected(id: string): boolean {
+    return this.selIds.includes(id)
+  }
+
+  /** 多选模式下点一下元素：在选区里加进 / 移出它 */
+  toggleSelected(id: string): void {
+    this.selIds = this.selIds.includes(id) ? this.selIds.filter((x) => x !== id) : [...this.selIds, id]
+  }
+
+  toggleMulti(): void {
+    this.multiMode = !this.multiMode
+    // 退出多选就收敛成一个，避免工具条上一直挂着排布入口
+    if (!this.multiMode && this.selIds.length > 1) {
+      const keep = this.selected
+      if (keep) this.selIds = [keep]
+    }
+  }
+
+  /** 选中全部贴纸和文字（不含笔迹） */
+  selectAll(): void {
+    this.selIds = this.page.items.map((i) => i.id)
+  }
+
+  get pageCount(): number {
+    return this.pages.length
+  }
+
   get canUndo(): boolean {
     return this.past.length > 0
   }
@@ -238,7 +312,17 @@ export class Editor {
   }
 
   save() {
+    // undo/redo 会把 page 换成快照副本，这里把页列表重新指回当前页，保证两者永远同一份
+    if (this.pages[this.pageIndex] !== this.page) {
+      const idx = this.pageIndex
+      this.pages = this.pages.map((p, i) => (i === idx ? this.page : p))
+    }
+    if (this.pages.length > 1) this.persistPages()
     saveDoc(clone(this.page))
+  }
+
+  private persistPages() {
+    savePages({ index: this.pageIndex, pages: this.pages.map((p) => clone(p)) })
   }
 
   mark() {
@@ -505,6 +589,75 @@ export class Editor {
     this.selected = null
     this.editing = null
     this.save()
+  }
+
+  /**
+   * 基础排布：对当前选区做一次对齐 / 等距 / 网格吸附。
+   * 复用现有的 mark() 撤销机制，一次操作只记一条撤销。
+   */
+  arrange(op: LayoutOp) {
+    const items = this.page.items.filter((i) => this.selIds.includes(i.id))
+    if (items.length === 0) return
+    if (op !== 'grid' && items.length < 2) return
+    this.mark()
+    applyLayout(items, op)
+    this.save()
+  }
+
+  /** 切页 / 增删页之后统一收尾：重置撤销栈和选中，落盘 */
+  private afterPageChange(index: number) {
+    this.pageIndex = index
+    this.page = this.pages[index]
+    this.selIds = []
+    this.editing = null
+    this.editMarked = false
+    this.past = []
+    this.future = []
+    this.persistPages()
+    saveDoc(clone(this.page))
+  }
+
+  addPage() {
+    const np = newPage('blank', `第 ${this.pages.length + 1} 页`)
+    if (this.pages[this.pageIndex] !== this.page) {
+      const idx = this.pageIndex
+      const arr = this.pages.map((p, i) => (i === idx ? this.page : p))
+      this.pages = [...arr, np]
+    } else {
+      this.pages = [...this.pages, np]
+    }
+    this.afterPageChange(this.pages.length - 1)
+  }
+
+  switchPage(index: number) {
+    if (index < 0 || index >= this.pages.length || index === this.pageIndex) return
+    const idx = this.pageIndex
+    this.pages = this.pages.map((p, i) => (i === idx ? this.page : p))
+    this.afterPageChange(index)
+  }
+
+  removePage(index: number) {
+    if (this.pages.length <= 1 || index < 0 || index >= this.pages.length) return
+    const next = this.pages.filter((_, i) => i !== index)
+    this.pages = next
+    let idx = this.pageIndex
+    if (index < idx) idx -= 1
+    else if (index === idx) idx = Math.min(idx, next.length - 1)
+    this.afterPageChange(idx)
+  }
+
+  /** 调整页序：把第 from 页挪到第 to 页 */
+  movePage(from: number, to: number) {
+    if (from === to || from < 0 || to < 0 || from >= this.pages.length || to >= this.pages.length) return
+    const arr = [...this.pages]
+    const moved = arr.splice(from, 1)[0]
+    arr.splice(to, 0, moved)
+    this.pages = arr
+    let idx = this.pageIndex
+    if (from === idx) idx = to
+    else if (from < idx && to >= idx) idx -= 1
+    else if (from > idx && to <= idx) idx += 1
+    this.afterPageChange(idx)
   }
 
   /** 落下一整条手写笔迹：一笔就是一条撤销记录 */

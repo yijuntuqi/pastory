@@ -1,3 +1,5 @@
+import { withBase } from './base'
+
 export type CatId = 'tape' | 'note' | 'stamp' | 'plant' | 'deco' | 'frame' | 'pro' | 'cut' | 'pack'
 
 export interface AssetDef {
@@ -326,6 +328,7 @@ export const ASSET_MAP: Record<string, AssetDef> = Object.fromEntries(
 )
 
 export function assetUrl(a: AssetDef): string {
-  if (a.src) return a.src
+  // 素材包是 public 下的绝对路径，部署在子路径（GitHub Pages 项目站点）时要补上基路径
+  if (a.src) return withBase(a.src)
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(a.svg ?? '')
 }

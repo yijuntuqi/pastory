@@ -1,0 +1,90 @@
+Pastory 更新包 · 基础版
+生成时间：2026-10-10
+适用：你手上这份 Pastory 项目（解压覆盖即可，不用重新建项目）
+
+========================
+一、这个包里有什么
+========================
+- 修好的字体下载脚本：scripts/make-fonts.mjs
+- 重写过的缩略图脚本：scripts/make-thumbs.mjs（新增覆盖率检查与清单生成）
+- 新增的前端模块：
+    src/lib/base.ts            部署基路径（子路径部署用）
+    src/lib/layout.ts          基础排布算法（对齐 / 等距 / 网格）
+    src/lib/export-video.ts    动效导出（captureStream + MediaRecorder，MP4）
+    src/lib/pages-store.ts     多页文档持久化
+    src/lib/thumbs.ts          缩略图地址（改成清单驱动，缺图自动回退原图）
+    src/lib/thumbs-manifest.ts 缩略图清单（跑 npm run thumbs 会重写它）
+- 改动过的前端文件：editor.svelte.ts、Toolbar.svelte、Page.svelte、exporter.ts、
+  assets.ts、fonts.ts、main.ts、public/sw.js、public/manifest.webmanifest
+- 新增部署配置：.github/workflows/pages.yml、vite.config.ts（可配置 base）
+- README.md 里补了部署和升级说明
+- package.json 里加了 predev / prebuild / thumbs:check 三个脚本
+
+没有包含（也不该被覆盖）的东西：node_modules、dist、你本地的素材包、.gitignore。
+
+========================
+二、按顺序执行
+========================
+1) 解压覆盖
+   把压缩包解压到你的 Pastory 项目根目录，选「覆盖同名文件」。
+   （目录结构是 /src、/scripts、/public、/.github、package.json 等，直接对根目录覆盖）
+
+2) 安装依赖
+   npm install
+   注意：项目在 E 盘（exFAT），只能用 npm，不要用 pnpm / yarn。
+
+3) 生成字体子集
+   npm run fonts
+   ★ 这一步必须在你自己机器上跑，字体文件太大、没法塞进更新包。
+   脚本会依次尝试多个候选地址（官方 GitHub Release / Google Fonts 仓库 + 加速镜像），
+   每个下载完先验字体文件头；某个字体所有候选都失败只会让那个字体缺一个 woff2，
+   不会打断其余字体。跑完看最后的「汇总」：成功几个、失败几个。
+   产物在 public/fonts/*.woff2，这些文件要一起提交进仓库。
+
+   小提示：如果得意黑（Smiley Sans）报超时，多半是官方 Release 直连不通，
+   脚本会自动改走镜像或它的 woff2 包；都失败就等信息好的时候单独重跑一次 npm run fonts。
+
+4) 生成素材包缩略图（一般不用手动跑，build / dev 之前会自动跑）
+   npm run thumbs
+   想单独核对覆盖率：npm run thumbs:check（有源图缺缩略图会以退出码 1 结束）
+
+5) 本地构建确认
+   npm run build
+   应当零报错。产物在 dist/。
+
+6) 提交
+   git add -A
+   git commit -m "Pastory 收尾基础版：字体脚本 / Pages 部署 / 缩略图 / 排布 / MP4 导出 / 页管理"
+   git push origin HEAD
+
+7) 打开 GitHub Pages
+   仓库 → Settings → Pages → Source 选「GitHub Actions」，保存。
+   注意：免费账号的 GitHub Pages 只能给公开仓库开站点。
+   不想公开仓库就用 Cloudflare Pages（免费、支持私有仓库），
+   Build command 填 npm run build，输出目录填 dist，环境变量不用加。
+
+========================
+三、FAQ
+========================
+Q：push 之后 Actions 里部署失败？
+A：先确认 Settings → Pages 的 Source 已经是「GitHub Actions」；再看 Actions 日志里
+   npm ci 那一步，多半是 package-lock.json 没一起提交。
+
+Q：Pages 打开后样式和图片全 404？
+A：那是 base 没设对。工作流已经用 actions/configure-pages 自动算 base_path，
+   一般不用管；手动构建时用 VITE_BASE=/仓库名/ npm run build。
+
+Q：字体没生成会怎样？
+A：不影响运行，文字会退回系统字体，只是没有那六款手写 / 涂鸦 / 标题字体。
+
+Q：导出的「动效视频」为什么是 .webm？
+A：你当前浏览器没提供 MP4 编码器（有些 Chromium 版本是这样），脚本退到了 WebM。
+   视频本身照样能动；想要 MP4 就用 Chrome / Edge / Safari 的较新版本再导一次。
+
+========================
+四、这一版明确没做的
+========================
+- 页管理只做新增 / 切换 / 删除 / 调页序；封面页、整本套模板不做。
+- 导出只做静态 PNG 和动效 MP4/WebM；不做 GIF；动态 WebP 没做
+  （WebCodecs 至今没有动效 WebP 的编码器）。
+- 排布只做对齐 / 等距 / 网格吸附，不做智能构图、不接 AI。

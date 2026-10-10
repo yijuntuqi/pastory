@@ -11,6 +11,9 @@ import { itemSrc } from './user-assets.svelte'
   import { LOOP_NAMES, type LoopId } from './look'
   import { ensureFont, FONTS, FONT_TIERS, fontFamily, tierName, type FontId } from './fonts'
   import { SUBSET_CHARS } from './font-subset'
+  import { withBase } from './base'
+  import { LAYOUT_OPS } from './layout'
+  import { exportVideo, pickVideoMime, videoExtOf } from './export-video'
   import { missingChars } from './text'
   import { isText } from './types'
   import { TEMPLATE_TAGS, tagOf } from './templates'
@@ -29,6 +32,14 @@ import { itemSrc } from './user-assets.svelte'
   let fontsReady = $state(0)
   /** 文字样式细调区：默认收起 */
   let textMore = $state(false)
+  /** 导出面板：静态 PNG 还是动效视频 */
+  let exportMode = $state<'png' | 'video'>('png')
+  /** 动效视频时长（秒） */
+  let videoSecs = $state(4)
+  /** 动效导出进度 0..1 */
+  let progress = $state(0)
+
+  const videoMime = $derived(pickVideoMime())
 
   const sel = $derived(editor.selectedItem)
   const selText = $derived(sel && isText(sel) ? sel : null)
@@ -81,19 +92,52 @@ import { itemSrc } from './user-assets.svelte'
     return ((v / total) * 100).toFixed(2) + '%'
   }
 
-  async function doExport() {
+  function stamp() {
+    return new Date().toISOString().slice(0, 10)
+  }
+
+  function flashMsg(text: string) {
+    msg = text
+    setTimeout(() => {
+      if (msg === text) msg = ''
+    }, 3600)
+  }
+
+  async function doExportPNG() {
     busy = true
     msg = ''
     try {
       const blob = await exportPNG(editor.page, scale)
-      const stamp = new Date().toISOString().slice(0, 10)
-      downloadBlob(blob, `${editor.page.name || 'pastory'}-${stamp}.png`)
-      msg = '已导出图片'
+      downloadBlob(blob, `${editor.page.name || 'pastory'}-${stamp()}.png`)
+      flashMsg('已导出静态图片 PNG')
     } catch (err) {
-      msg = err instanceof Error ? err.message : '导出失败'
+      flashMsg(err instanceof Error ? err.message : '导出失败')
     } finally {
       busy = false
-      setTimeout(() => (msg = ''), 2400)
+    }
+  }
+
+  async function doExportVideo() {
+    busy = true
+    msg = ''
+    progress = 0
+    try {
+      const r = await exportVideo(editor.page, {
+        duration: videoSecs,
+        scale: 1,
+        onProgress: (p) => (progress = p),
+      })
+      downloadBlob(r.blob, `${editor.page.name || 'pastory'}-动效-${stamp()}.${r.ext}`)
+      flashMsg(
+        r.ext === 'mp4'
+          ? `已导出 MP4 动效（${videoSecs} 秒，可循环）`
+          : '这个浏览器只支持 WebM 录制，已导出 WebM（同样能动；想要 MP4 请用 Chrome / Edge / Safari）',
+      )
+    } catch (err) {
+      flashMsg(err instanceof Error ? err.message : '导出失败')
+    } finally {
+      busy = false
+      progress = 0
     }
   }
 </script>
@@ -135,15 +179,24 @@ import { itemSrc } from './user-assets.svelte'
       class:on={editor.writeMode}
       title="手写：用 Apple Pencil 在纸面上写字涂鸦，手指仍可平移缩放"
       onclick={() => editor.toggleWrite()}>手写</button>
+    <button
+      class="btn ghost"
+      class:on={editor.multiMode}
+      title="多选：打开后点元素是加进 / 移出选区（电脑上按住 Shift 点也一样），选够两个就能排布"
+      onclick={() => editor.toggleMulti()}>多选</button>
+    <button
+      class="btn ghost"
+      class:on={panel === 'pages'}
+      title="页面：新增 / 切换 / 删除 / 调整页序"
+      onclick={() => toggle('pages')}>页面 · {editor.pageCount}</button>
   </div>
 
   <div class="right">
-    <select bind:value={scale} aria-label="导出倍数">
-      <option value={1}>1x</option>
-      <option value={2}>2x</option>
-      <option value={3}>3x</option>
-    </select>
-    <button class="btn primary" disabled={busy} onclick={doExport}>{busy ? '导出中' : '导出图片'}</button>
+    <button
+      class="btn primary"
+      class:on={panel === 'export'}
+      disabled={busy}
+      onclick={() => toggle('export')}>{busy ? '导出中…' : '导出'}</button>
   </div>
 
   {#if sel}
@@ -174,6 +227,26 @@ import { itemSrc } from './user-assets.svelte'
       <button class="btn ghost" onclick={() => editor.toFront()}>置顶</button>
       <button class="btn ghost" onclick={() => editor.toBack()}>置底</button>
       <button class="btn ghost danger" onclick={() => editor.remove()}>删除</button>
+    </div>
+  {/if}
+
+  {#if editor.multiMode || editor.selectedIds.length >= 2}
+    <div class="layoutbar">
+      <span class="laylabel">
+        {editor.selectedIds.length >= 2 ? `排布 ${editor.selectedIds.length} 个元素` : '多选：点元素加进选区'}
+      </span>
+      {#each LAYOUT_OPS as o (o.op)}
+        <button
+          class="btn ghost"
+          disabled={editor.selectedIds.length < 2 && o.op !== 'grid'}
+          title={o.hint}
+          onclick={() => editor.arrange(o.op)}>{o.name}</button>
+      {/each}
+      <button
+        class="btn ghost"
+        title="选中这一页上的全部元素（贴纸 + 文字）"
+        onclick={() => editor.selectAll()}>全选</button>
+      <button class="btn ghost" title="取消多选" onclick={() => editor.toggleMulti()}>退出多选</button>
     </div>
   {/if}
 
@@ -509,12 +582,104 @@ import { itemSrc } from './user-assets.svelte'
           class="swatch"
           class:on={editor.page.bg.tex === t.src}
           title={t.name}
-          style="background-image:url('{thumbUrl(t.src) ?? t.src}')"
+          style="background-image:url('{thumbUrl(t.src) ?? withBase(t.src)}')"
           onclick={() => { editor.setBgTex(t.src); panel = '' }}>
           <span class="sw-name">{t.name}</span>
         </button>
       {/each}
       <p class="credit">纸纹与素材来自 The Met / Cleveland Museum of Art / ambientCG，授权 CC0。</p>
+    </div>
+  {/if}
+
+  {#if panel === 'export'}
+    <div class="pop export">
+      <div class="modes">
+        <button
+          class="mode"
+          class:on={exportMode === 'png'}
+          onclick={() => (exportMode = 'png')}>
+          <strong>静态图片</strong>
+          <em>PNG，清晰、体积小，发小红书 / 朋友圈最合适</em>
+        </button>
+        <button
+          class="mode"
+          class:on={exportMode === 'video'}
+          onclick={() => (exportMode = 'video')}>
+          <strong>动效视频</strong>
+          <em>MP4，元素自带的呼吸 / 摇摆 / 漂浮会动起来，可无缝循环</em>
+        </button>
+      </div>
+
+      {#if exportMode === 'png'}
+        <div class="exportrow">
+          <span class="laylabel">清晰度</span>
+          <select bind:value={scale} aria-label="导出倍数">
+            <option value={1}>1x</option>
+            <option value={2}>2x</option>
+            <option value={3}>3x</option>
+          </select>
+          <button class="btn primary" disabled={busy} onclick={doExportPNG}>
+            {busy ? '导出中…' : '导出 PNG'}
+          </button>
+        </div>
+        <p class="credit">导出前会自动等所有用到的字体和素材加载完，看到的和存下来的一致。</p>
+      {:else}
+        <div class="exportrow">
+          <span class="laylabel">时长</span>
+          <select bind:value={videoSecs} aria-label="动效时长">
+            <option value={3}>3 秒</option>
+            <option value={4}>4 秒</option>
+            <option value={5}>5 秒</option>
+          </select>
+          <button class="btn primary" disabled={busy || !videoMime} onclick={doExportVideo}>
+            {busy ? '录制中…' : '导出 MP4'}
+          </button>
+        </div>
+        {#if busy}
+          <div class="progress"><span style="width:{Math.round(progress * 100)}%"></span></div>
+          <p class="credit">正在录制 {Math.round(progress * 100)}%（录制期间请把页面留在前台）</p>
+        {:else}
+          <p class="credit">
+            {#if videoMime}
+              录制格式：{videoExtOf(videoMime) === 'mp4' ? 'MP4' : 'WebM（这个浏览器没给 MP4 编码器，视频一样能动）'}；
+              时长 {videoSecs} 秒，首尾相接可循环。元素要先在右侧「动效」里挑一个循环效果才会动。
+            {:else}
+              这个浏览器不支持视频录制，导出 MP4 需要 Chrome / Edge / Safari 的较新版本。
+            {/if}
+          </p>
+        {/if}
+        <p class="credit">动态 WebP 这一版没做：WebCodecs 至今没有动效 WebP 的编码器（只有视频编码），等浏览器支持了再补。GIF 也不做。</p>
+      {/if}
+    </div>
+  {/if}
+
+  {#if panel === 'pages'}
+    <div class="pop pages">
+      {#each editor.pages as p, i (p.id)}
+        <div class="pagerow" class:on={i === editor.pageIndex}>
+          <button class="pname" title="切到这一页" onclick={() => { editor.switchPage(i); panel = '' }}>
+            <span class="pidx">{i + 1}</span>
+            <span class="ptitle">{p.name}</span>
+            <em>{p.items.length} 个元素</em>
+          </button>
+          <button class="pact" aria-label="上移" disabled={i === 0} onclick={() => editor.movePage(i, i - 1)}>↑</button>
+          <button
+            class="pact"
+            aria-label="下移"
+            disabled={i === editor.pages.length - 1}
+            onclick={() => editor.movePage(i, i + 1)}>↓</button>
+          <button
+            class="pact danger"
+            aria-label="删除这一页"
+            disabled={editor.pages.length <= 1}
+            onclick={() => editor.removePage(i)}>×</button>
+        </div>
+      {/each}
+      <button class="opt" onclick={() => { editor.addPage(); panel = '' }}>
+        <strong>新增一页</strong>
+        <em>加一张空白页插在当前页后面</em>
+      </button>
+      <p class="credit">页序用 ↑ ↓ 调整；封面页、整本套模板这一版不做。</p>
     </div>
   {/if}
 
@@ -1004,5 +1169,159 @@ import { itemSrc } from './user-assets.svelte'
     margin-left: auto;
     font-size: 11px;
     color: var(--ink-soft);
+  }
+
+  /* ---- 排布条 ---- */
+  .layoutbar {
+    flex: 1 0 100%;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px dashed var(--line);
+  }
+
+  .laylabel {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-right: 2px;
+  }
+
+  /* ---- 导出面板 ---- */
+  .pop.export {
+    flex-direction: column;
+  }
+
+  .modes {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .mode {
+    flex: 1 1 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+  }
+
+  .mode.on {
+    border-color: var(--terra);
+    background: var(--paper-2);
+  }
+
+  .mode strong {
+    font-size: 13px;
+    color: var(--ink);
+  }
+
+  .mode em {
+    font-style: normal;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+
+  .exportrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .progress {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--paper-2);
+    overflow: hidden;
+  }
+
+  .progress span {
+    display: block;
+    height: 100%;
+    background: var(--terra);
+    transition: width 0.1s linear;
+  }
+
+  /* ---- 页面面板 ---- */
+  .pop.pages {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .pagerow {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+  }
+
+  .pagerow.on {
+    border-color: var(--terra);
+    background: var(--paper-2);
+  }
+
+  .pname {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+    padding: 4px 6px;
+    color: var(--ink);
+    font-size: 13px;
+  }
+
+  .pname .pidx {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: var(--paper-2);
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+
+  .pname .ptitle {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pname em {
+    margin-left: auto;
+    font-style: normal;
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+
+  .pact {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  .pact:disabled {
+    opacity: 0.35;
+  }
+
+  .pact.danger {
+    color: var(--terra);
   }
 </style>
