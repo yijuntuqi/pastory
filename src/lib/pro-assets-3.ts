@@ -300,6 +300,204 @@ const checklist = def(
     `</g>`,
 )
 
+/* ---- 第二批场景素材：日常记录类模板用（学习 / 追剧 / 美食 / 宠物 / 购物 / 健身 / 节日 / 纪念） ---- */
+
+const popcorn = def(
+  'd3-popcorn',
+  '爆米花',
+  150,
+  160,
+  `<path d="M28 96 H122 L112 150 H38 Z" fill="#FFFDF7" stroke="#C9AE85" stroke-width="1.6"/>` +
+    `<path d="M28 96 H122" stroke="#D9A441" stroke-width="2" stroke-dasharray="6 5"/>` +
+    `<g fill="#F3E7CE" stroke="#D9C3A0" stroke-width="1.2">` +
+    `<circle cx="48" cy="72" r="15"/><circle cx="74" cy="58" r="17"/><circle cx="100" cy="72" r="15"/>` +
+    `<circle cx="60" cy="48" r="13"/><circle cx="90" cy="46" r="12"/>` +
+    `</g>` +
+    `<path d="M44 112 H106 M42 128 H108" stroke="#E4DACA" stroke-width="3" stroke-linecap="round"/>`,
+)
+
+const paw = def(
+  'd3-paw',
+  '爪印',
+  140,
+  140,
+  `<g fill="#D9C3A0" stroke="#C9AE85" stroke-width="1.3">` +
+    `<ellipse cx="70" cy="92" rx="26" ry="22"/>` +
+    `<ellipse cx="34" cy="62" rx="11" ry="14" transform="rotate(-18 34 62)"/>` +
+    `<ellipse cx="58" cy="46" rx="11" ry="15"/>` +
+    `<ellipse cx="86" cy="46" rx="11" ry="15"/>` +
+    `<ellipse cx="108" cy="62" rx="11" ry="14" transform="rotate(18 108 62)"/>` +
+    `</g>` +
+    `<circle cx="70" cy="92" r="7" fill="#C9AE85" opacity="0.5"/>`,
+)
+
+const cart = def(
+  'd3-cart',
+  '购物车',
+  170,
+  150,
+  `<path d="M14 22 H34 L52 96 H134 L150 42 H44" fill="none" stroke="#8FA9C4" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>` +
+    `<circle cx="62" cy="118" r="11" fill="#DCE9DA" stroke="#8FA9C4" stroke-width="2"/>` +
+    `<circle cx="120" cy="118" r="11" fill="#DCE9DA" stroke="#8FA9C4" stroke-width="2"/>` +
+    `<path d="M70 58 H130 M74 74 H126" stroke="#E4DACA" stroke-width="3" stroke-linecap="round"/>`,
+)
+
+const dumbbell = def(
+  'd3-dumbbell',
+  '哑铃',
+  180,
+  110,
+  `<rect x="78" y="50" width="24" height="10" rx="5" fill="#C9AE85"/>` +
+    `<g fill="#DCE9DA" stroke="#8FA98F" stroke-width="1.6">` +
+    `<rect x="18" y="34" width="14" height="42" rx="5"/><rect x="36" y="26" width="16" height="58" rx="6"/>` +
+    `<rect x="128" y="26" width="16" height="58" rx="6"/><rect x="148" y="34" width="14" height="42" rx="5"/>` +
+    `</g>`,
+)
+
+const bowl = def(
+  'd3-bowl',
+  '面碗',
+  170,
+  140,
+  `<path d="M26 62 H144 C144 104 116 126 85 126 C54 126 26 104 26 62 Z" fill="#FFFDF7" stroke="#C9AE85" stroke-width="1.6"/>` +
+    `<path d="M26 62 H144" stroke="#D9A441" stroke-width="2.4"/>` +
+    `<path d="M50 50 q10 -18 24 -8 q4 -16 22 -8 q12 -14 26 -2 q16 -6 20 12" fill="none" stroke="#E4DACA" stroke-width="2.6" stroke-linecap="round"/>` +
+    `<g fill="none" stroke="#C9AE85" stroke-width="1.4" stroke-linecap="round" opacity="0.75">` +
+    `<path d="M62 22 q6 -10 0 -16"/><path d="M86 20 q6 -10 0 -16"/><path d="M110 22 q6 -10 0 -16"/>` +
+    `</g>`,
+)
+
+const gift = def(
+  'd3-gift',
+  '礼物盒',
+  160,
+  160,
+  `<rect x="20" y="62" width="120" height="84" rx="6" fill="#FBEFF0" stroke="#D98C8C" stroke-width="1.6"/>` +
+    `<rect x="10" y="40" width="140" height="30" rx="6" fill="#F6E0DE" stroke="#D98C8C" stroke-width="1.6"/>` +
+    `<path d="M80 40 V146" stroke="#D98C8C" stroke-width="2.4"/>` +
+    `<path d="M80 40 C60 40 46 22 58 14 C70 6 78 24 80 40 Z" fill="#E7AFB0" stroke="#D98C8C" stroke-width="1.3"/>` +
+    `<path d="M80 40 C100 40 114 22 102 14 C90 6 82 24 80 40 Z" fill="#E7AFB0" stroke="#D98C8C" stroke-width="1.3"/>`,
+)
+
+const snow = def(
+  'd3-snow',
+  '雪花',
+  140,
+  140,
+  `<g stroke="#8FA9C4" stroke-width="2.2" stroke-linecap="round">` +
+    `<path d="M70 14 V126"/><path d="M22 42 L118 98"/><path d="M118 42 L22 98"/>` +
+    `</g>` +
+    `<g stroke="#A8BED6" stroke-width="1.6" stroke-linecap="round">` +
+    `<path d="M70 34 L56 24 M70 34 L84 24 M70 106 L56 116 M70 106 L84 116"/>` +
+    `<path d="M40 56 L26 54 M44 82 L30 88 M100 56 L114 54 M96 82 L110 88"/>` +
+    `</g>`,
+)
+
+const firework = def(
+  'd3-firework',
+  '烟花',
+  170,
+  170,
+  `<g stroke="#D9A441" stroke-width="2.2" stroke-linecap="round" opacity="0.9">` +
+    Array.from({ length: 12 }, (_, i) => {
+      const a = (i / 12) * Math.PI * 2
+      const x1 = 85 + Math.cos(a) * 22
+      const y1 = 85 + Math.sin(a) * 22
+      const x2 = 85 + Math.cos(a) * 62
+      const y2 = 85 + Math.sin(a) * 62
+      return `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} L${x2.toFixed(1)} ${y2.toFixed(1)}"/>`
+    }).join('') +
+    `</g>` +
+    `<g fill="#E7AFB0"><circle cx="85" cy="85" r="9"/></g>` +
+    `<g fill="#C97B63" opacity="0.85"><circle cx="85" cy="16" r="4"/><circle cx="85" cy="154" r="4"/><circle cx="16" cy="85" r="4"/><circle cx="154" cy="85" r="4"/></g>`,
+)
+
+const controller = def(
+  'd3-controller',
+  '手柄',
+  190,
+  130,
+  `<path d="M52 34 H138 C166 34 180 56 176 84 C172 112 156 118 140 100 L130 88 H60 L50 100 C34 118 18 112 14 84 C10 56 24 34 52 34 Z" fill="#EFE7DA" stroke="#C9AE85" stroke-width="1.6"/>` +
+    `<circle cx="58" cy="62" r="8" fill="#8FA98F"/><circle cx="76" cy="80" r="8" fill="#8FA98F"/>` +
+    `<circle cx="132" cy="60" r="7" fill="#C97B63"/><circle cx="150" cy="78" r="7" fill="#D9A441"/>`,
+)
+
+const boba = def(
+  'd3-boba',
+  '奶茶',
+  130,
+  170,
+  `<path d="M28 44 H102 L94 156 H36 Z" fill="#FFFDF7" stroke="#C9AE85" stroke-width="1.6"/>` +
+    `<path d="M32 110 H98 L94 156 H36 Z" fill="#E7D3B0" opacity="0.85"/>` +
+    `<path d="M26 44 H104" stroke="#D9A441" stroke-width="3" stroke-linecap="round"/>` +
+    `<path d="M52 34 L44 8" stroke="#C97B63" stroke-width="4" stroke-linecap="round"/>` +
+    `<g fill="#8C6A4A"><circle cx="50" cy="128" r="6"/><circle cx="68" cy="140" r="6"/><circle cx="84" cy="126" r="6"/></g>`,
+)
+
+const pressed = def(
+  'd3-pressed',
+  '植物标本',
+  200,
+  260,
+  `<rect x="10" y="10" width="180" height="240" rx="6" fill="#FFFDF7" stroke="#D9C3A0" stroke-width="1.6"/>` +
+    `<rect x="20" y="20" width="160" height="220" rx="4" fill="none" stroke="#E4DACA" stroke-width="1"/>` +
+    `<path d="M100 224 C96 176 92 128 88 58" fill="none" stroke="#8FA98F" stroke-width="2"/>` +
+    `<g fill="#A8BCA4">` +
+    Array.from({ length: 7 }, (_, i) => {
+      const y = 60 + i * 24
+      return `<path d="M${90 - i} ${y} q-30 -8 -40 -26 q30 -2 40 26 Z"/><path d="M${92 - i} ${y + 10} q30 -8 40 -26 q-30 -2 -40 26 Z"/>`
+    }).join('') +
+    `</g>` +
+    `<g fill="#D98C8C" opacity="0.9"><circle cx="150" cy="60" r="9"/><circle cx="150" cy="80" r="7"/></g>` +
+    `<path d="M30 232 H170" stroke="#E4DACA" stroke-width="1.5"/>`,
+)
+
+const magazine = def(
+  'd3-magazine',
+  '复古报刊',
+  320,
+  220,
+  `<rect x="8" y="8" width="304" height="204" rx="4" fill="#F5EFE1" stroke="#C9AE85" stroke-width="1.6"/>` +
+    `<path d="M8 44 H312" stroke="#8C6A4A" stroke-width="2.4"/>` +
+    `<path d="M8 50 H312" stroke="#C9AE85" stroke-width="1"/>` +
+    `<g fill="#8C6A4A" opacity="0.85">` +
+    `<rect x="24" y="20" width="120" height="12" rx="3"/>` +
+    `<rect x="252" y="22" width="44" height="8" rx="3"/>` +
+    `</g>` +
+    `<g stroke="#C9AE85" stroke-width="1.2" opacity="0.9">` +
+    `<path d="M160 56 V204"/>` +
+    `<path d="M24 74 H146 M24 88 H146 M24 102 H146 M24 116 H146 M24 130 H146"/>` +
+    `<path d="M176 74 H296 M176 88 H296 M176 102 H296 M176 116 H296 M176 130 H296 M176 144 H296 M176 158 H296"/>` +
+    `</g>` +
+    `<rect x="24" y="146" width="122" height="58" fill="#E4DACA" stroke="#C9AE85" stroke-width="1.2"/>` +
+    `<path d="M24 186 L58 162 L82 180 L104 158 L146 190 L146 204 L24 204 Z" fill="#D8E0D4"/>`,
+)
+
+const framedeco = def(
+  'd3-frame',
+  '复古边框',
+  340,
+  260,
+  `<rect x="6" y="6" width="328" height="248" rx="4" fill="none" stroke="#B08A5A" stroke-width="3"/>` +
+    `<rect x="16" y="16" width="308" height="228" rx="3" fill="none" stroke="#D9C3A0" stroke-width="1.4"/>` +
+    `<g fill="none" stroke="#B08A5A" stroke-width="2" stroke-linecap="round">` +
+    `<path d="M6 34 V6 H34"/><path d="M306 6 H334 V34"/><path d="M334 226 V254 H306"/><path d="M34 254 H6 V226"/>` +
+    `</g>` +
+    `<g stroke="#D9C3A0" stroke-width="1.2" opacity="0.8">` +
+    `<path d="M170 6 V16 M170 244 V254 M6 130 H16 M324 130 H334"/>` +
+    `</g>`,
+)
+
+const heartline = def(
+  'd3-heartline',
+  '心率线',
+  220,
+  100,
+  `<path d="M12 60 H52 L64 60 L74 26 L86 92 L98 44 L108 60 H132 L144 60 L154 34 L164 84 L174 60 H208" fill="none" stroke="#C97B63" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>` +
+    `<g stroke="#E4DACA" stroke-width="1.2"><path d="M12 84 H208"/></g>`,
+)
+
+
 export const PRO_ASSETS_3: AssetDef[] = [
   shell,
   palm,
@@ -320,4 +518,18 @@ export const PRO_ASSETS_3: AssetDef[] = [
   books,
   glasses,
   checklist,
+  popcorn,
+  paw,
+  cart,
+  dumbbell,
+  bowl,
+  gift,
+  snow,
+  firework,
+  controller,
+  boba,
+  pressed,
+  magazine,
+  framedeco,
+  heartline,
 ]

@@ -1,6 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { ASSETS, CATEGORIES, assetUrl, type AssetDef, type CatId } from './assets'
+  import { ASSETS, ASSET_MAP, CATEGORIES, assetUrl, type AssetDef, type CatId } from './assets'
+  import { searchAssets, tagsOf } from './asset-search'
+  import { favs } from './asset-fav.svelte'
+  import { recents } from './asset-recent.svelte'
   import {
     userAssets,
     importFiles,
@@ -15,13 +18,15 @@
 
   let { editor }: { editor: Editor } = $props()
 
-  type TabId = CatId | 'mine'
+  type TabId = CatId | 'mine' | 'fav' | 'recent'
 
   let cat = $state<TabId>('pro')
   let tip = $state('')
   let busy = $state(false)
   let fileEl = $state<HTMLInputElement | null>(null)
   let cropId = $state<string | null>(null)
+  /** 搜索关键词：为空时按分类浏览，非空时全局搜索 */
+  let q = $state('')
 
   /** 手指 / 鼠标移动超过这个距离才算拖拽 */
   const DRAG_THRESHOLD = 6
@@ -64,6 +69,11 @@
   const mine = $derived([...userAssets.entries()] as [string, UserAsset][])
   const cropSrc = $derived(cropId ? (userAssets.get(cropId)?.src ?? null) : null)
 
+  const searching = $derived(q.trim().length > 0)
+  const results = $derived(searching ? searchAssets(q) : [])
+  const favItems = $derived(favs.ids.map((id) => ASSET_MAP[id]).filter(Boolean) as AssetDef[])
+  const recentItems = $derived(recents.ids.map((id) => ASSET_MAP[id]).filter(Boolean) as AssetDef[])
+
   onMount(() => {
     void loadUserAssets()
   })
@@ -87,6 +97,7 @@
 
   function add(id: string, name: string) {
     editor.add(id)
+    recents.push(id)
     flash(`已加入：${name}`)
   }
 
@@ -171,8 +182,11 @@
     window.removeEventListener('touchmove', onGlobalTouchMove)
     dragId = null
     if (g.dragging) {
-      if (cancelled) editor.cancelDrag()
-      else editor.dropDrag()
+      if (cancelled) {
+        editor.cancelDrag()
+      } else if (editor.dropDrag()) {
+        if (!g.isUser) recents.push(g.assetId)
+      }
       return
     }
     // 没移动够阈值 = 点一下，走原来的「加到纸面中间」
@@ -254,7 +268,25 @@
     {#each CATEGORIES as c (c.id)}
       <button class="tab" class:on={cat === c.id} onclick={() => (cat = c.id)}>{c.name}</button>
     {/each}
+    <button class="tab" class:on={cat === 'fav'} onclick={() => (cat = 'fav')}>
+      收藏{favItems.length ? ' ' + favItems.length : ''}
+    </button>
+    <button class="tab" class:on={cat === 'recent'} onclick={() => (cat = 'recent')}>最近</button>
     <button class="tab" class:on={cat === 'mine'} onclick={() => (cat = 'mine')}>我的</button>
+  </div>
+
+  <div class="find">
+    <input
+      class="findinput"
+      type="search"
+      placeholder="搜素材：名字 / 用途 / 题材，如「胶带」「植物」「圣诞」"
+      aria-label="搜索素材"
+      value={q}
+      oninput={(e) => (q = (e.currentTarget as HTMLInputElement).value)}
+    />
+    {#if searching}
+      <button class="findclear" title="清空" onclick={() => (q = '')}>×</button>
+    {/if}
   </div>
 
   {#if cat === 'mine'}
@@ -277,27 +309,66 @@
   />
 
   {#snippet cellBtn(a: AssetDef)}
-    <button
-      class="cell"
-      class:paper={a.paper === true}
-      class:dragging={dragId === a.id}
-      title={a.name}
-      onpointerdown={(e) => beginBuiltin(e, a)}
-      onclick={() => onClickCell(() => add(a.id, a.name))}
-    >
-      <img
-        src={assetThumb(a)}
-        data-full={assetUrl(a)}
-        alt={a.name}
-        draggable="false"
-        onerror={onThumbFallback}
-      />
-      <span>{a.name}</span>
-    </button>
+    <div class="cellwrap">
+      <button
+        class="cell"
+        class:paper={a.paper === true}
+        class:dragging={dragId === a.id}
+        title={a.name + (tagsOf(a).length ? ' · ' + tagsOf(a).join(' ') : '')}
+        onpointerdown={(e) => beginBuiltin(e, a)}
+        onclick={() => onClickCell(() => add(a.id, a.name))}
+      >
+        <img
+          src={assetThumb(a)}
+          data-full={assetUrl(a)}
+          alt={a.name}
+          draggable="false"
+          onerror={onThumbFallback}
+        />
+        <span>{a.name}</span>
+      </button>
+      <button
+        class="star"
+        class:on={favs.has(a.id)}
+        title={favs.has(a.id) ? '取消收藏' : '收藏'}
+        aria-label={favs.has(a.id) ? '取消收藏' : '收藏'}
+        onclick={(e) => {
+          e.stopPropagation()
+          favs.toggle(a.id)
+        }}
+      >
+        ★
+      </button>
+    </div>
   {/snippet}
 
   <div class="grid scroll">
-    {#if cat === 'mine'}
+    {#if searching}
+      {#if results.length === 0}
+        <p class="empty">没找到「{q}」。换个词试试，或者点上面的分类自己翻。</p>
+      {:else}
+        <h4 class="group">搜索到 {results.length} 个</h4>
+        {#each results as a (a.id)}
+          {@render cellBtn(a)}
+        {/each}
+      {/if}
+    {:else if cat === 'fav'}
+      {#if favItems.length === 0}
+        <p class="empty">还没有收藏。点素材右上角的星标，收藏的会集中在这里，刷新不丢。</p>
+      {:else}
+        {#each favItems as a (a.id)}
+          {@render cellBtn(a)}
+        {/each}
+      {/if}
+    {:else if cat === 'recent'}
+      {#if recentItems.length === 0}
+        <p class="empty">还没用过素材。用过之后这里按时间倒序排最近的，方便接着用。</p>
+      {:else}
+        {#each recentItems as a (a.id)}
+          {@render cellBtn(a)}
+        {/each}
+      {/if}
+    {:else if cat === 'mine'}
       {#if mine.length === 0}
         <p class="empty">
           还没有自己的图片。点上面「导入图片」，把收藏的手帐图、贴纸、照片加进来。单张导入会先让你裁剪，只留想用的那一块；之后随时点缩略图右下角的剪刀重新裁。图片只保存在你这台设备里，不会上传到服务器。
@@ -388,6 +459,68 @@
     background: var(--paper-2);
     color: var(--ink);
     border-color: var(--line);
+  }
+
+  .find {
+    position: relative;
+    padding: 0 10px 8px;
+  }
+
+  .findinput {
+    width: 100%;
+    height: 30px;
+    padding: 0 26px 0 10px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    font: inherit;
+    font-size: 12px;
+    color: var(--ink);
+  }
+
+  .findinput::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  .findclear {
+    position: absolute;
+    right: 16px;
+    top: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    font-size: 14px;
+    line-height: 1;
+    color: var(--ink-soft);
+  }
+
+  .cellwrap {
+    position: relative;
+    display: flex;
+  }
+
+  .cellwrap .cell {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .star {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--line);
+    color: #d3c7b3;
+    font-size: 11px;
+    line-height: 1;
+  }
+
+  .star.on {
+    color: var(--mustard);
+    border-color: var(--mustard);
   }
 
   .bar {
@@ -590,6 +723,11 @@
       overflow-x: auto;
       overflow-y: hidden;
       touch-action: pan-x;
+    }
+
+    .grid > .cellwrap {
+      flex: 0 0 auto;
+      width: 78px;
     }
 
     .grid > .cell {

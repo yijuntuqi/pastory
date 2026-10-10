@@ -3,7 +3,9 @@ import { settings } from './settings.svelte'
 import { PAPER_TEX_ALPHA, paperEdge, paperOutline } from './look'
 import { paperOn } from './sticker'
 import { inkLayerCanvas } from './ink'
-import type { Item, PageDoc } from './types'
+import { drawTextItem } from './text'
+import { ensureFonts } from './fonts'
+import { isText, type Item, type PageDoc } from './types'
 
 const MAX_AREA = 16777216
 
@@ -140,6 +142,14 @@ function drawItem(
 }
 
 export async function exportPNG(page: PageDoc, want = 2): Promise<Blob> {
+  // 先把用到的字体等出来，否则导出图会掉字或变成系统字体（屏幕和导出就不一致了）
+  await ensureFonts(page.items.filter(isText).map((i) => i.font))
+  try {
+    await (document as Document & { fonts?: FontFaceSet }).fonts?.ready
+  } catch {
+    /* fonts.ready 不可用就跳过，ensureFonts 已经保证用到的字体加载完成 */
+  }
+
   const scale = fitScale(page, want)
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(page.width * scale)
@@ -182,6 +192,10 @@ export async function exportPNG(page: PageDoc, want = 2): Promise<Blob> {
 
   const sorted = [...page.items].sort((a, b) => a.z - b.z)
   for (const item of sorted) {
+    if (isText(item)) {
+      drawTextItem(ctx, item, scale)
+      continue
+    }
     const img = imgs.get(item.asset)
     if (!img) continue
     drawItem(ctx, item, img, scale)

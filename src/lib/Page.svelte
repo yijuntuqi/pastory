@@ -4,8 +4,10 @@
   import { settings } from './settings.svelte'
   import { PAPER_TEX_ALPHA, paperClip, paperEdge } from './look'
   import { brushDef, makeSpeedMapper, MIN_SAMPLE_DIST, paintInk, paintStroke, smoothAlpha, strokeHit, strokeLength } from './ink'
+  import { clearTextCache, cssFamilyOf, cssShadowOf, layoutOf, TEXT_MAX_W, TEXT_MIN_W } from './text'
+  import { ensureFont, type FontId } from './fonts'
   import type { Editor } from './editor.svelte'
-  import type { Item, Stroke } from './types'
+  import { isText, type Item, type Stroke } from './types'
 
   let { editor }: { editor: Editor } = $props()
 
@@ -19,6 +21,8 @@
   let panY = $state(0)
   let viewport = $state<HTMLDivElement | null>(null)
   let stageEl = $state<HTMLDivElement | null>(null)
+  /** 叠在画布上的文字输入框（viewport 坐标系，不参与画布的 scale 变换，iPad 上更稳） */
+  let editEl = $state<HTMLTextAreaElement | null>(null)
 
   type Mode = 'idle' | 'move' | 'scale' | 'rotate' | 'pan' | 'pinch'
   let mode: Mode = $state('idle')
@@ -380,6 +384,8 @@
 
   function onDown(e: PointerEvent) {
     if (e.button !== undefined && e.button !== 0 && e.pointerType === 'mouse') return
+    // 编辑文字时画布不参与拖动 / 缩放 / 选中，输入框自己接管指针
+    if (editor.editing) return
     e.preventDefault()
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
@@ -398,6 +404,28 @@
       return
     }
     if (pts.size > 2) return
+
+    if (editor.textMode) {
+      // 文字模式：点已有文字直接改，点空白处新建一个文字框
+      const p = toPage(e.clientX, e.clientY)
+      const it = hit(p)
+      if (it && isText(it)) {
+        editor.beginEdit(it.id)
+        return
+      }
+      if (it) {
+        editor.selected = it.id
+        mode = 'move'
+        d.id = it.id
+        d.px = p.x
+        d.py = p.y
+        d.x0 = it.x
+        d.y0 = it.y
+        return
+      }
+      editor.addText(p.x, p.y)
+      return
+    }
 
     if (editor.writeMode) {
       if (canDraw(e)) {
@@ -516,8 +544,14 @@
     } else if (mode === 'scale') {
       const v = Math.hypot(p.x - d.cx, p.y - d.cy)
       const f = v / d.v0
-      it.w = clamp(d.w0 * f, MIN_SIZE, MAX_SIZE)
-      it.h = clamp(d.h0 * f, MIN_SIZE, MAX_SIZE)
+      if (isText(it)) {
+        // 文字框只改宽度，高度永远由排版算出来，避免和实际行数对不上
+        it.w = clamp(d.w0 * f, TEXT_MIN_W, TEXT_MAX_W)
+        editor.relayout(it)
+      } else {
+        it.w = clamp(d.w0 * f, MIN_SIZE, MAX_SIZE)
+        it.h = clamp(d.h0 * f, MIN_SIZE, MAX_SIZE)
+      }
     } else if (mode === 'rotate') {
       const a = (Math.atan2(p.y - d.cy, p.x - d.cx) * 180) / Math.PI
       it.rot = Math.round(d.rot0 + (a - d.a0))
@@ -547,6 +581,7 @@
 
   function onWheel(e: WheelEvent) {
     e.preventDefault()
+    if (editor.editing) return
     const el = viewport
     if (!el) return
     const r = el.getBoundingClientRect()
@@ -560,7 +595,139 @@
 
   const sel = $derived(editor.selectedItem)
   const hs = $derived(Math.round(16 / Math.max(zoom, 0.3)))
+
+  // ---- 文字：叠层输入框 ----
+  const editingItem = $derived(editor.editingItem)
+  const editBox = $derived.by(() => {
+    const it = editingItem
+    if (!it) return null
+    const L = layoutOf(it)
+    return {
+      left: panX + it.x * zoom,
+      top: panY + it.y * zoom,
+      w: it.w * zoom,
+      h: L.h * zoom,
+      lineH: L.lineH * zoom,
+      padX: L.padX * zoom,
+      padY: L.padY * zoom,
+      size: (it.size ?? 44) * zoom,
+    }
+  })
+  /** 画面上所有文字项用到的字体；加载完成后要清排班缓存并重排 */
+  const textFontKey = $derived(
+    [...new Set(editor.page.items.filter(isText).map((i) => i.font ?? ''))].join(','),
+  )
+
+  /** 把文字框滚（平移）进可视区，而不是滚整个页面 */
+  function ensureVisible(id: string) {
+    const el = viewport
+    const it = editor.page.items.find((i) => i.id === id)
+    if (!el || !it) return
+    const L = layoutOf(it)
+    const vw = el.clientWidth
+    const vh = el.clientHeight
+    const bw = it.w * zoom
+    const bh = L.h * zoom
+    const m = 16
+    let nx = panX
+    let ny = panY
+    const left = nx + it.x * zoom - bw / 2
+    const top = ny + it.y * zoom - bh / 2
+    if (left < m) nx += m - left
+    if (left + bw > vw - m) nx -= left + bw - (vw - m)
+    if (top < m) ny += m - top
+    if (top + bh > vh - m) ny -= top + bh - (vh - m)
+    panX = nx
+    panY = ny
+  }
+
+  function onTextInput(e: Event) {
+    const it = editingItem
+    if (!it) return
+    editor.setText(it.id, (e.currentTarget as HTMLTextAreaElement).value)
+  }
+
+  function onTextKey(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      editor.endEdit()
+    } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      editor.endEdit()
+    }
+  }
+
+  function onDblClick(e: MouseEvent) {
+    if (editor.editing) return
+    const p = toPage(e.clientX, e.clientY)
+    const it = hit(p)
+    if (it && isText(it)) editor.beginEdit(it.id)
+  }
+
+  // 进入编辑：聚焦输入框、把光标放到末尾，并把文字框挪进可视区
+  $effect(() => {
+    const id = editor.editing
+    if (!id) return
+    const el = editEl
+    ensureVisible(id)
+    if (!el) return
+    requestAnimationFrame(() => {
+      try {
+        el.focus({ preventScroll: true })
+        const n = el.value.length
+        el.setSelectionRange(n, n)
+      } catch {
+        /* 个别环境上 setSelectionRange 不可用，忽略 */
+      }
+    })
+  })
+
+  // iPad 弹出软键盘时 visualViewport 会变小，跟着把文字框挪回可视区
+  $effect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const onResize = () => {
+      if (editor.editing) ensureVisible(editor.editing)
+    }
+    vv.addEventListener('resize', onResize)
+    return () => vv.removeEventListener('resize', onResize)
+  })
+
+  // 字体到位后重排一次，屏幕和导出的度量才一致
+  $effect(() => {
+    const ids = [...new Set(textFontKey.split(',').filter(Boolean))] as FontId[]
+    if (ids.length === 0) return
+    for (const id of ids) {
+      void ensureFont(id).then(() => {
+        clearTextCache()
+        editor.relayoutAll()
+      })
+    }
+  })
 </script>
+
+{#snippet textVisual(item: Item, hidden: boolean)}
+  {@const L = layoutOf(item)}
+  <div
+    class="txt"
+    class:hide={hidden}
+    style="font-family:{cssFamilyOf(item)}; font-size:{item.size ?? 44}px; font-weight:{item.bold
+      ? 700
+      : 400}; font-style:{item.italic
+      ? 'italic'
+      : 'normal'}; color:{item.color ??
+      '#3A332C'}; letter-spacing:{item.letter ?? 0}px; line-height:{L.lineH}px; text-align:{item.align ??
+      'left'}; text-shadow:{cssShadowOf(item)}; -webkit-text-stroke:{item.strokeWidth &&
+    item.strokeWidth > 0
+      ? (item.strokeWidth + 'px ' + (item.strokeColor ?? '#FFFFFF'))
+      : '0'}; paint-order:stroke fill; background:{item.bgColor ??
+      'transparent'}; padding:{L.padY}px {L.padX}px;"
+  >
+    {#each L.lines as line, i (i)}
+      <div class="tline">{line === '' ? ' ' : line}</div>
+    {/each}
+  </div>
+{/snippet}
 
 {#snippet visual(item: Item, cls: string, active: boolean)}
   <div class="looper {cls}" style="filter:{itemFilter(item, { depth: settings.depth, active })};">
@@ -589,6 +756,7 @@
     class:no-motion={!settings.motion}
     bind:this={stageEl}
     onpointerdown={onDown}
+    ondblclick={onDblClick}
     style="width:{editor.page.width}px; height:{editor.page.height}px; background:{editor.page
       .bg.color}; transform: translate({panX}px, {panY}px) scale({zoom}){settings.tilt
       ? ' translate(50%, 50%) rotateX(7deg) rotateY(-4deg) translate(-50%, -50%)'
@@ -626,7 +794,11 @@
           .flip ? -1 : 1}) scale({editor.selected === item.id ? 1.04 : 1});"
       >
         <div class="pop" class:on={popId === item.id}>
-          {@render visual(item, loopClass(item), editor.selected === item.id)}
+          {#if isText(item)}
+            {@render textVisual(item, editor.editing === item.id)}
+          {:else}
+            {@render visual(item, loopClass(item), editor.selected === item.id)}
+          {/if}
         </div>
       </div>
     {/each}
@@ -638,7 +810,11 @@
           .item.opacity ?? 1}; z-index:{g.item.z}; transform: translate(-50%, -50%) rotate({g.item
           .rot}deg) scaleX({g.item.flip ? -1 : 1});"
       >
-        {@render visual(g.item, '', false)}
+        {#if isText(g.item)}
+          {@render textVisual(g.item, false)}
+        {:else}
+          {@render visual(g.item, '', false)}
+        {/if}
       </div>
     {/each}
 
@@ -669,6 +845,37 @@
       </div>
     {/if}
   </div>
+
+  {#if editingItem && editBox}
+    <textarea
+      class="text-edit"
+      bind:this={editEl}
+      value={editingItem.text ?? ''}
+      aria-label="编辑文字"
+      spellcheck="false"
+      autocapitalize="off"
+      autocomplete="off"
+      oninput={onTextInput}
+      onkeydown={onTextKey}
+      onblur={() => editor.endEdit()}
+      style="left:{editBox.left - editBox.w / 2}px; top:{editBox.top - editBox.h / 2}px; width:{editBox
+        .w}px; height:{editBox.h}px; font-family:{cssFamilyOf(editingItem)}; font-size:{editBox
+        .size}px; line-height:{editBox.lineH}px; font-weight:{editingItem.bold
+        ? 700
+        : 400}; font-style:{editingItem.italic
+        ? 'italic'
+        : 'normal'}; color:{editingItem.color ??
+        '#3A332C'}; letter-spacing:{(editingItem.letter ?? 0) *
+        zoom}px; text-align:{editingItem.align ??
+        'left'}; padding:{editBox.padY}px {editBox.padX}px; background:{editingItem.bgColor ??
+        'rgba(255,255,255,0.92)'}; transform: rotate({editingItem.rot}deg);"
+    ></textarea>
+    <button
+      class="text-done"
+      style="left:{editBox.left + editBox.w / 2}px; top:{editBox.top - editBox.h / 2}px;"
+      onpointerdown={(e) => e.preventDefault()}
+      onclick={() => editor.endEdit()}>完成</button>
+  {/if}
 </div>
 
 <style>
@@ -743,6 +950,57 @@
     background-image: linear-gradient(#d6cbb8 1px, transparent 1px);
     background-size: 100% 36px;
     background-position: 0 48px;
+  }
+
+  /* 文字项：整块就是排版好的行，由 JS 断行，屏幕和导出共用同一组行 */
+  .txt {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    white-space: pre;
+    overflow: visible;
+    transition: opacity 0.12s ease;
+  }
+
+  .txt.hide {
+    opacity: 0;
+  }
+
+  .tline {
+    white-space: pre;
+  }
+
+  /* 叠在画布上的输入框：位置和字号按 zoom 手工换算，不用 CSS 缩放，
+     避免 Safari 在 transform: scale 下把光标和字形对错 */
+  .text-edit {
+    position: absolute;
+    z-index: 80000;
+    box-sizing: border-box;
+    margin: 0;
+    border: 1px dashed rgba(201, 123, 99, 0.75);
+    border-radius: 4px;
+    outline: none;
+    resize: none;
+    overflow: hidden;
+    transform-origin: center center;
+    font: inherit;
+    caret-color: var(--terra);
+    -webkit-user-select: text;
+    user-select: text;
+    touch-action: manipulation;
+  }
+
+  .text-done {
+    position: absolute;
+    z-index: 80001;
+    transform: translate(-100%, -100%);
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 12px;
+    line-height: 1.4;
+    box-shadow: var(--shadow-md);
   }
 
   .item {

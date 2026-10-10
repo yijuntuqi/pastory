@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
-    "thumbs": "node scripts/make-thumbs.mjs"
+    "thumbs": "node scripts/make-thumbs.mjs",
+    "fonts": "node scripts/make-fonts.mjs",
+    "icons": "node scripts/make-icons.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
@@ -18,6 +20,7 @@
     "svelte": "^5.57.0",
     "svelte-check": "^4.7.6",
     "typescript": "~6.0.2",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "subset-font": "^2.9.0"
   }
 }

@@ -2,9 +2,10 @@ import { ASSET_MAP } from './assets'
 import { newPage, uid } from './templates'
 import type { LoopId } from './look'
 import { stickerOn } from './sticker'
-import type { BgType, Item, PageDoc, Stroke } from './types'
-
-const KEY = 'pastory.doc.v1'
+import { loadAsync, loadLocal, saveDoc } from './doc-store'
+import { DEFAULT_FONT } from './fonts'
+import { DEFAULT_TEXT_W, TEXT_MAX_W, TEXT_MIN_W, textHeight } from './text'
+import { isText, type BgType, type Item, type PageDoc, type Stroke, type TextAlign } from './types'
 
 export interface BgDef {
   type: BgType
@@ -21,6 +22,18 @@ export const BGS: BgDef[] = [
   { type: 'grid', name: '方格', color: '#FBF7F0' },
   { type: 'lined', name: '横线', color: '#FBF7F0' },
   { type: 'grid', name: '牛皮', color: '#EFE0C6' },
+]
+
+/** 文字常用色（和纸面配色同一族） */
+export const TEXT_COLORS = [
+  '#3A332C',
+  '#FFFFFF',
+  '#7A6A58',
+  '#C97B63',
+  '#D98C8C',
+  '#D9A441',
+  '#8FA98F',
+  '#6E7FA0',
 ]
 
 export interface DragStart {
@@ -49,17 +62,61 @@ function clone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v)) as T
 }
 
+function num(v: unknown, fallback: number): number {
+  return typeof v === 'number' && Number.isFinite(v) ? v : fallback
+}
+
+function textDefaults(item: Item): Item {
+  item.size = num(item.size, 44)
+  item.color = typeof item.color === 'string' ? item.color : '#3A332C'
+  item.font = item.font ?? DEFAULT_FONT
+  item.bold = item.bold === true
+  item.italic = item.italic === true
+  item.letter = num(item.letter, 0)
+  item.lineH = num(item.lineH, 1.4)
+  item.align = (item.align === 'center' || item.align === 'right' ? item.align : 'left') as TextAlign
+  item.strokeColor = typeof item.strokeColor === 'string' ? item.strokeColor : '#FFFFFF'
+  item.strokeWidth = num(item.strokeWidth, 0)
+  item.shadow = item.shadow === true
+  item.bgPad = num(item.bgPad, 14)
+  item.text = typeof item.text === 'string' ? item.text : ''
+  item.w = Math.min(TEXT_MAX_W, Math.max(TEXT_MIN_W, num(item.w, DEFAULT_TEXT_W)))
+  return item
+}
+
+/**
+ * 老草稿兼容：缺字段补默认值，删掉彻底没法渲染的元素。
+ * 只认「有 asset 的贴纸」和「type === 'text' 的文字」两种。
+ */
+export function normalizeDoc(doc: PageDoc | null): PageDoc | null {
+  if (!doc || typeof doc !== 'object') return null
+  if (!Array.isArray(doc.items)) return null
+  doc.strokes = Array.isArray(doc.strokes) ? doc.strokes : []
+  doc.width = num(doc.width, 1240)
+  doc.height = num(doc.height, 1754)
+  doc.bg = doc.bg && typeof doc.bg === 'object' ? doc.bg : { type: 'plain', color: '#FBF7F0' }
+  doc.bg.type = doc.bg.type ?? 'plain'
+  doc.bg.color = doc.bg.color ?? '#FBF7F0'
+  doc.items = doc.items.filter((it) => {
+    if (!it || typeof it !== 'object') return false
+    if (isText(it)) return true
+    return typeof it.asset === 'string' && it.asset !== ''
+  })
+  doc.items.forEach((it, i) => {
+    it.id = it.id ?? uid()
+    it.x = num(it.x, doc.width! / 2)
+    it.y = num(it.y, doc.height! / 2)
+    it.w = num(it.w, 200)
+    it.h = num(it.h, 200)
+    it.rot = num(it.rot, 0)
+    it.z = num(it.z, i + 1)
+    if (isText(it)) textDefaults(it)
+  })
+  return doc
+}
+
 function load(): PageDoc | null {
-  try {
-    const raw = localStorage.getItem(KEY)
-    if (!raw) return null
-    const doc = JSON.parse(raw) as PageDoc
-    if (!doc || !Array.isArray(doc.items)) return null
-    if (!Array.isArray(doc.strokes)) doc.strokes = []
-    return doc
-  } catch {
-    return null
-  }
+  return normalizeDoc(loadLocal())
 }
 
 export class Editor {
@@ -72,10 +129,41 @@ export class Editor {
 
   /** 书写模式：画布只收手写笔迹，不选中也不误拖贴纸 */
   writeMode = $state(false)
+  /** 文字模式：点空白处新建文字，点已有文字直接改 */
+  textMode = $state(false)
+  /** 正在编辑的文字项 id（编辑时画布不响应拖动 / 缩放 / 选中） */
+  editing = $state<string | null>(null)
+  /** 这一轮编辑是否已经记过撤销，用来把「一次编辑」合并成一条记录 */
+  private editMarked = false
+
+  constructor() {
+    // 首屏先用 localStorage 的快照（同步、不闪），随后用 IndexedDB 里的矢量文档纠正一次
+    if (typeof window !== 'undefined') {
+      void loadAsync().then((doc) => {
+        const fixed = normalizeDoc(doc)
+        if (fixed && fixed.items.length !== this.page.items.length) {
+          this.page = fixed
+          this.selected = null
+        } else if (fixed && JSON.stringify(fixed) !== JSON.stringify(this.page)) {
+          this.page = fixed
+        }
+      })
+    }
+  }
 
   toggleWrite() {
     this.writeMode = !this.writeMode
-    if (this.writeMode) this.selected = null
+    if (this.writeMode) {
+      this.selected = null
+      this.textMode = false
+      this.endEdit()
+    }
+  }
+
+  toggleText() {
+    this.textMode = !this.textMode
+    if (this.textMode) this.writeMode = false
+    else this.endEdit()
   }
 
   /** 素材栏拖拽的实时预览状态，画布据此显示落点提示 */
@@ -132,6 +220,11 @@ export class Editor {
     return this.page.items.find((i) => i.id === this.selected) ?? null
   }
 
+  get editingItem(): Item | null {
+    if (!this.editing) return null
+    return this.page.items.find((i) => i.id === this.editing) ?? null
+  }
+
   get itemCount(): number {
     return this.page.items.length
   }
@@ -145,11 +238,7 @@ export class Editor {
   }
 
   save() {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(clone(this.page)))
-    } catch {
-      /* 存不上就算了 */
-    }
+    saveDoc(clone(this.page))
   }
 
   mark() {
@@ -164,6 +253,8 @@ export class Editor {
     this.future.push(this.snap())
     this.page = prev
     this.selected = null
+    this.editing = null
+    this.editMarked = false
     this.save()
   }
 
@@ -173,6 +264,8 @@ export class Editor {
     this.past.push(this.snap())
     this.page = next
     this.selected = null
+    this.editing = null
+    this.editMarked = false
     this.save()
   }
 
@@ -194,6 +287,7 @@ export class Editor {
     this.page.items.push(item)
     this.selected = item.id
     this.lastAdded = item.id
+    this.editMarked = false
     this.save()
   }
 
@@ -213,6 +307,91 @@ export class Editor {
     this.page.items.push(item)
     this.selected = item.id
     this.lastAdded = item.id
+    this.editMarked = false
+    this.save()
+  }
+
+  /** 新建一个文字框，并直接进入编辑 */
+  addText(x?: number, y?: number, text = ''): Item {
+    this.mark()
+    const item: Item = textDefaults({
+      id: uid(),
+      asset: '',
+      type: 'text',
+      text,
+      x: x ?? this.page.width / 2,
+      y: y ?? this.page.height / 2,
+      w: DEFAULT_TEXT_W,
+      h: 60,
+      rot: 0,
+      z: this.topZ() + 1,
+    })
+    this.page.items.push(item)
+    this.relayout(item)
+    this.selected = item.id
+    this.lastAdded = item.id
+    // 新建时已经记过一条撤销，接下来打字合并进同一条
+    this.editMarked = true
+    this.editing = item.id
+    this.save()
+    return item
+  }
+
+  /** 文字内容变更（输入框每次输入都会调） */
+  setText(id: string, text: string) {
+    const item = this.page.items.find((i) => i.id === id)
+    if (!item || !isText(item)) return
+    if (item.text === text) return
+    this.beforeTextChange(id)
+    item.text = text
+    this.relayout(item)
+    this.save()
+  }
+
+  /** 文字样式变更（字号 / 颜色 / 字体 …） */
+  patchText(id: string, patch: Partial<Item>) {
+    const item = this.page.items.find((i) => i.id === id)
+    if (!item || !isText(item)) return
+    this.beforeTextChange(id)
+    Object.assign(item, patch)
+    textDefaults(item)
+    this.relayout(item)
+    this.save()
+  }
+
+  /** 编辑期间只在第一次改动前记一条撤销，之后的输入合并进同一条 */
+  private beforeTextChange(id: string) {
+    if (this.editing === id && this.editMarked) return
+    this.mark()
+    this.editMarked = this.editing === id
+  }
+
+  /** 重算文字框高度（排版一变就调） */
+  relayout(item: Item) {
+    if (!isText(item)) return
+    item.h = textHeight(item)
+  }
+
+  /** 所有文字项重排一次（字体加载完、清缓存后调） */
+  relayoutAll() {
+    for (const item of this.page.items) {
+      if (isText(item)) this.relayout(item)
+    }
+    this.save()
+  }
+
+  beginEdit(id: string) {
+    const item = this.page.items.find((i) => i.id === id)
+    if (!item || !isText(item)) return
+    this.selected = id
+    this.editing = id
+    this.editMarked = false
+  }
+
+  endEdit() {
+    if (!this.editing) return
+    this.editing = null
+    this.editMarked = false
     this.save()
   }
 
@@ -237,14 +416,17 @@ export class Editor {
     }
     this.page.items.push(copy)
     this.selected = copy.id
+    this.editMarked = false
     this.save()
   }
 
   remove() {
     if (!this.selected) return
+    if (this.editing === this.selected) this.editing = null
     this.mark()
     this.page.items = this.page.items.filter((i) => i.id !== this.selected)
     this.selected = null
+    this.editMarked = false
     this.save()
   }
 
@@ -312,6 +494,8 @@ export class Editor {
     this.page.width = blank.width
     this.page.height = blank.height
     this.selected = null
+    this.editing = null
+    this.editMarked = false
     this.save()
   }
 
@@ -319,6 +503,7 @@ export class Editor {
     this.mark()
     this.page.items = []
     this.selected = null
+    this.editing = null
     this.save()
   }
 

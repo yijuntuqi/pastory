@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BGS, type BgDef, type Editor } from './editor.svelte'
+  import { BGS, TEXT_COLORS, type BgDef, type Editor } from './editor.svelte'
   import { PAGE_H, PAGE_W, SCENES, type SceneDef } from './templates'
 import { itemSrc } from './user-assets.svelte'
   import { stickerOn } from './sticker'
@@ -9,6 +9,11 @@ import { itemSrc } from './user-assets.svelte'
   import { PACK_TEXTURES } from './pack-assets'
   import { thumbUrl } from './thumbs'
   import { LOOP_NAMES, type LoopId } from './look'
+  import { ensureFont, FONTS, FONT_TIERS, fontFamily, tierName, type FontId } from './fonts'
+  import { SUBSET_CHARS } from './font-subset'
+  import { missingChars } from './text'
+  import { isText } from './types'
+  import { TEMPLATE_TAGS, tagOf } from './templates'
 
   let { editor, onFit }: { editor: Editor; onFit?: () => void } = $props()
 
@@ -18,8 +23,42 @@ import { itemSrc } from './user-assets.svelte'
   let msg = $state('')
   /** 笔迹手感面板：默认收起 */
   let feelOpen = $state(false)
+  /** 模板面板的分类筛选 */
+  let tplTag = $state('全部')
+  /** 字体预览加载进度（只用来触发重渲染） */
+  let fontsReady = $state(0)
+  /** 文字样式细调区：默认收起 */
+  let textMore = $state(false)
 
   const sel = $derived(editor.selectedItem)
+  const selText = $derived(sel && isText(sel) ? sel : null)
+  const outsideChars = $derived(
+    selText ? missingChars(selText.text ?? '', SUBSET_CHARS) : [],
+  )
+  const tplList = $derived(
+    tplTag === '全部' ? SCENES : SCENES.filter((t) => tagOf(t) === tplTag),
+  )
+
+  /** 打开字体面板时按顺序把预览字体拉下来（首屏不加载任何字体） */
+  async function openFontPanel() {
+    const open = panel !== 'font'
+    panel = open ? 'font' : ''
+    if (!open) return
+    for (const f of FONTS) {
+      await ensureFont(f.id as FontId)
+      fontsReady += 1
+    }
+  }
+
+  function setFont(id: FontId) {
+    if (!selText) return
+    void ensureFont(id)
+    editor.patchText(selText.id, { font: id })
+  }
+
+  function alignIcon(a: string): string {
+    return a === 'left' ? '左' : a === 'center' ? '中' : '右'
+  }
 
   function toggle(p: string) {
     panel = panel === p ? '' : p
@@ -88,6 +127,11 @@ import { itemSrc } from './user-assets.svelte'
       onclick={() => settings.toggleTilt()}>3D</button>
     <button
       class="btn ghost"
+      class:on={editor.textMode}
+      title="文字：点纸面空白处新建文字框，点已有文字直接改；双击也能进编辑"
+      onclick={() => editor.toggleText()}>文字</button>
+    <button
+      class="btn ghost"
       class:on={editor.writeMode}
       title="手写：用 Apple Pencil 在纸面上写字涂鸦，手指仍可平移缩放"
       onclick={() => editor.toggleWrite()}>手写</button>
@@ -106,12 +150,16 @@ import { itemSrc } from './user-assets.svelte'
     <div class="selbar">
       <span class="dot"></span>
       <button class="btn ghost" onclick={() => editor.duplicate()}>复制</button>
-      <button class="btn ghost" onclick={() => editor.flip()}>翻转</button>
-      <button
-        class="btn ghost"
-        class:on={stickerOn(sel)}
-        title="贴纸白边与投影"
-        onclick={() => editor.toggleSticker()}>贴纸感</button>
+      {#if !selText}
+        <button class="btn ghost" onclick={() => editor.flip()}>翻转</button>
+        <button
+          class="btn ghost"
+          class:on={stickerOn(sel)}
+          title="贴纸白边与投影"
+          onclick={() => editor.toggleSticker()}>贴纸感</button>
+      {:else}
+        <button class="btn ghost" onclick={() => editor.beginEdit(selText.id)}>改文字</button>
+      {/if}
       <select
         class="loopsel"
         aria-label="循环动效"
@@ -126,6 +174,141 @@ import { itemSrc } from './user-assets.svelte'
       <button class="btn ghost" onclick={() => editor.toFront()}>置顶</button>
       <button class="btn ghost" onclick={() => editor.toBack()}>置底</button>
       <button class="btn ghost danger" onclick={() => editor.remove()}>删除</button>
+    </div>
+  {/if}
+
+  {#if selText}
+    <div class="textbar">
+      <button class="btn ghost" class:on={panel === 'font'} onclick={openFontPanel}>
+        字体 · {FONTS.find((f) => f.id === selText.font)?.name ?? '默认'}
+      </button>
+      <label class="mini">
+        <span>字号 {Math.round(selText.size ?? 44)}</span>
+        <input
+          type="range"
+          min="14"
+          max="140"
+          step="1"
+          value={selText.size ?? 44}
+          aria-label="字号"
+          oninput={(e) => editor.patchText(selText.id, { size: Number((e.currentTarget as HTMLInputElement).value) })}
+        />
+      </label>
+      {#each TEXT_COLORS as c (c)}
+        <button
+          class="ink-dot"
+          class:on={(selText.color ?? '#3A332C') === c}
+          style="background:{c}"
+          title={'字色 ' + c}
+          aria-label={'字色 ' + c}
+          onclick={() => editor.patchText(selText.id, { color: c })}></button>
+      {/each}
+      <span class="bar-sep"></span>
+      <button
+        class="btn ghost bold"
+        class:on={selText.bold === true}
+        title="加粗"
+        onclick={() => editor.patchText(selText.id, { bold: !selText.bold })}>粗</button>
+      <button
+        class="btn ghost italic"
+        class:on={selText.italic === true}
+        title="斜体"
+        onclick={() => editor.patchText(selText.id, { italic: !selText.italic })}>斜</button>
+      {#each ['left', 'center', 'right'] as a (a)}
+        <button
+          class="btn ghost"
+          class:on={(selText.align ?? 'left') === a}
+          title={'对齐：' + a}
+          onclick={() => editor.patchText(selText.id, { align: a as 'left' | 'center' | 'right' })}>
+          {alignIcon(a)}
+        </button>
+      {/each}
+      <span class="bar-sep"></span>
+      <button class="btn ghost" class:on={textMore} onclick={() => (textMore = !textMore)}>
+        字距 / 行距 / 描边
+      </button>
+      <button
+        class="btn ghost"
+        class:on={selText.shadow === true}
+        title="文字投影"
+        onclick={() => editor.patchText(selText.id, { shadow: !selText.shadow })}>阴影</button>
+      <button
+        class="btn ghost"
+        class:on={!!selText.bgColor}
+        title="给文字加一块底色"
+        onclick={() =>
+          editor.patchText(selText.id, { bgColor: selText.bgColor ? null : '#FFFDF7' })}>底色</button>
+      {#if outsideChars.length > 0}
+        <span class="outside" title={'这些字不在内置字体子集里：' + outsideChars.join(' ')}>
+          {outsideChars.length} 个字超出字体子集，会用系统字体显示
+        </span>
+      {/if}
+      {#if textMore}
+        <div class="morebar">
+          <label class="mini">
+            <span>字距 {(selText.letter ?? 0).toFixed(1)}</span>
+            <input
+              type="range"
+              min="-3"
+              max="12"
+              step="0.5"
+              value={selText.letter ?? 0}
+              aria-label="字距"
+              oninput={(e) => editor.patchText(selText.id, { letter: Number((e.currentTarget as HTMLInputElement).value) })}
+            />
+          </label>
+          <label class="mini">
+            <span>行距 {(selText.lineH ?? 1.4).toFixed(2)}</span>
+            <input
+              type="range"
+              min="0.9"
+              max="2.6"
+              step="0.05"
+              value={selText.lineH ?? 1.4}
+              aria-label="行距"
+              oninput={(e) => editor.patchText(selText.id, { lineH: Number((e.currentTarget as HTMLInputElement).value) })}
+            />
+          </label>
+          <label class="mini">
+            <span>描边 {(selText.strokeWidth ?? 0).toFixed(1)}</span>
+            <input
+              type="range"
+              min="0"
+              max="8"
+              step="0.5"
+              value={selText.strokeWidth ?? 0}
+              aria-label="描边宽度"
+              oninput={(e) =>
+                editor.patchText(selText.id, {
+                  strokeWidth: Number((e.currentTarget as HTMLInputElement).value),
+                  strokeColor: selText.strokeColor ?? '#FFFFFF',
+                })}
+            />
+          </label>
+          <span class="morelabel">描边色</span>
+          {#each TEXT_COLORS as c (c)}
+            <button
+              class="ink-dot"
+              class:on={(selText.strokeColor ?? '#FFFFFF') === c}
+              style="background:{c}"
+              title={'描边 ' + c}
+              aria-label={'描边 ' + c}
+              onclick={() => editor.patchText(selText.id, { strokeColor: c })}></button>
+          {/each}
+          {#if selText.bgColor}
+            <span class="morelabel">底色</span>
+            {#each TEXT_COLORS.concat(['#FFFDF7', '#EFE7DA']) as c (c)}
+              <button
+                class="ink-dot"
+                class:on={selText.bgColor === c}
+                style="background:{c}"
+                title={'底色 ' + c}
+                aria-label={'底色 ' + c}
+                onclick={() => editor.patchText(selText.id, { bgColor: c })}></button>
+            {/each}
+          {/if}
+        </div>
+      {/if}
     </div>
   {/if}
 
@@ -232,9 +415,43 @@ import { itemSrc } from './user-assets.svelte'
     </div>
   {/if}
 
+  {#if panel === 'font'}
+    <div class="pop fonts">
+      <p class="credit">
+        全部为 SIL OFL 1.1，允许免费商用、网页嵌入与随包分发。每个字体都裁过子集（常用汉字 + 标点 + 数字 + 字母），
+        用到才下载；子集外的字会自动退回系统字体。
+      </p>
+      {#each FONT_TIERS as tier (tier.id)}
+        <h4 class="tier">{tier.name}</h4>
+        {#each FONTS.filter((f) => f.tier === tier.id) as f (f.id)}
+          <button
+            class="fontcard"
+            class:on={selText?.font === f.id}
+            onclick={() => {
+              setFont(f.id)
+              panel = ''
+            }}
+          >
+            <span class="fname" style="font-family:{fontFamily(f.id)}">
+              {f.name}　手帐文字 Aa 123 你好
+            </span>
+            <span class="fmeta">{tierName(f.tier)} · {f.license} · {f.source}</span>
+            <span class="fmeta">{f.note}</span>
+          </button>
+        {/each}
+      {/each}
+    </div>
+  {/if}
+
   {#if panel === 'tpl'}
     <div class="pop tpl">
-      {#each SCENES as t (t.id)}
+      <div class="tplfilter">
+        {#each ['全部', ...TEMPLATE_TAGS] as tag (tag)}
+          <button class="chip" class:on={tplTag === tag} onclick={() => (tplTag = tag)}>{tag}</button>
+        {/each}
+        <span class="tplcount">共 {SCENES.length} 套</span>
+      </div>
+      {#each tplList as t (t.id)}
         <button
           class="tpl-card"
           title={t.inkTip ? t.hint + ' · ' + t.inkTip : t.hint}
@@ -656,5 +873,136 @@ import { itemSrc } from './user-assets.svelte'
     font-size: 10px;
     line-height: 1.35;
     color: var(--terra);
+  }
+
+  /* ---- 文字属性面板 ---- */
+  .textbar {
+    flex-basis: 100%;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    padding: 6px 0 2px;
+    border-top: 1px dashed var(--line);
+  }
+
+  .mini {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  .mini input[type='range'] {
+    width: 84px;
+    accent-color: var(--terra);
+  }
+
+  .bold {
+    font-weight: 700;
+  }
+
+  .italic {
+    font-style: italic;
+  }
+
+  .outside {
+    font-size: 11px;
+    color: var(--terra);
+  }
+
+  .morebar {
+    flex-basis: 100%;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 4px 0 2px;
+  }
+
+  .morelabel {
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+
+  /* ---- 字体面板 ---- */
+  .pop.fonts {
+    width: min(460px, calc(100vw - 40px));
+    max-height: 68vh;
+    overflow-y: auto;
+  }
+
+  .tier {
+    margin: 6px 0 0;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+  }
+
+  .fontcard {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    text-align: left;
+  }
+
+  .fontcard:hover {
+    background: #fff;
+  }
+
+  .fontcard.on {
+    border-color: var(--terra);
+    box-shadow: 0 0 0 2px rgba(201, 123, 99, 0.22);
+  }
+
+  .fname {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .fmeta {
+    font-size: 10px;
+    line-height: 1.4;
+    color: var(--ink-soft);
+  }
+
+  /* ---- 模板分类筛选 ---- */
+  .tplfilter {
+    flex: 1 0 100%;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px dashed var(--line);
+  }
+
+  .chip {
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  .chip.on {
+    background: var(--paper-2);
+    color: var(--ink);
+    border-color: var(--terra);
+  }
+
+  .tplcount {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--ink-soft);
   }
 </style>

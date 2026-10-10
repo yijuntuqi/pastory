@@ -2,6 +2,7 @@
   import Page from './lib/Page.svelte'
   import Palette from './lib/Palette.svelte'
   import Toolbar from './lib/Toolbar.svelte'
+  import InstallPrompt from './lib/InstallPrompt.svelte'
   import { createEditor } from './lib/editor.svelte'
 
   const editor = createEditor()
@@ -19,6 +20,7 @@
     <Page bind:this={pageRef} {editor} />
     <Palette {editor} />
   </div>
+  <InstallPrompt />
 </div>
 
 <style>
